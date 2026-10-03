@@ -29,6 +29,7 @@
   }
   .wrap{width:100%; max-width:520px; display:flex; flex-direction:column; gap:16px}
   .card{background:var(--card); border-radius:20px; padding:28px 22px; box-shadow:0 10px 40px rgba(255,92,157,.25)}
+  .pagetitle{text-align:center; font-size:28px; color:var(--ink); margin:4px 0 0}
   .head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
   .head h1{margin:0; font-size:24px}
   .nav{display:flex; gap:6px}
@@ -124,6 +125,7 @@
 </head>
 <body>
 <div class="wrap">
+  <h1 class="pagetitle">🎀 클로이의 TO DO LIST</h1>
   <div class="card">
     <div class="head">
       <h1 id="calTitle"></h1>
@@ -144,7 +146,7 @@
   </div>
 
   <div class="card">
-    <h1>할 일 목록</h1>
+    <h1>📝 할 일 목록</h1>
     <p class="sub" id="count"></p>
     <form id="form">
       <button class="more-btn" type="button" id="detailBtn" aria-expanded="false">자세히 보기</button>
@@ -185,7 +187,7 @@
   </div>
 
   <div class="card miss">
-    <h2>그날 못한 일</h2>
+    <h2>😢 그날 못한 일</h2>
     <p class="sub">날짜를 고르고, 그날 끝내지 못한 일을 적어두세요.</p>
     <div class="daterow">
       <input type="date" id="missDate" aria-label="날짜">
@@ -386,7 +388,7 @@
   }
 
   function renderGrid() {
-    $('calTitle').textContent = viewY + '년 ' + (viewM + 1) + '월';
+    $('calTitle').textContent = '\uD83D\uDCC5 ' + viewY + '년 ' + (viewM + 1) + '월';
     var grid = $('grid');
     grid.innerHTML = '';
     DOW.forEach(function (d) {
