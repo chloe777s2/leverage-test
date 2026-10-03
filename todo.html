@@ -48,6 +48,8 @@
   li.done .text{color:var(--muted); text-decoration:line-through}
   .badge{display:inline-block; padding:1px 8px; border-radius:999px; color:#fff; font-size:11px; font-weight:700}
   .p-high{background:var(--high)} .p-mid{background:var(--mid)} .p-low{background:var(--low)}
+  .cat{display:inline-block; padding:1px 8px; border-radius:999px; border:1.5px solid var(--accent); color:var(--accent-d); font-size:11px; font-weight:700}
+  .catfilter{width:100%; margin-bottom:6px; padding:8px 12px; font-size:14px}
   .overdue{color:var(--high); font-weight:700}
   .icon{border:0; background:none; color:var(--muted); font-size:20px; line-height:1; padding:4px 8px}
   .icon:hover{color:var(--accent-d)}
@@ -70,6 +72,13 @@
     <form id="form">
       <input type="text" id="input" placeholder="할 일을 입력하세요" maxlength="200" autocomplete="off">
       <input type="date" id="due" aria-label="마감일">
+      <select id="cat" aria-label="카테고리">
+        <option value="work">카테고리: 업무</option>
+        <option value="study">카테고리: 공부</option>
+        <option value="health">카테고리: 운동</option>
+        <option value="life" selected>카테고리: 생활</option>
+        <option value="etc">카테고리: 기타</option>
+      </select>
       <select id="prio" aria-label="우선순위">
         <option value="high">우선순위: 높음</option>
         <option value="mid" selected>우선순위: 보통</option>
@@ -82,6 +91,14 @@
       <button data-f="active">진행중</button>
       <button data-f="done">완료</button>
     </div>
+    <select id="catFilter" aria-label="카테고리 필터" class="catfilter">
+      <option value="all">모든 카테고리</option>
+      <option value="work">업무</option>
+      <option value="study">공부</option>
+      <option value="health">운동</option>
+      <option value="life">생활</option>
+      <option value="etc">기타</option>
+    </select>
     <ul id="list"></ul>
     <button class="link" id="clear">완료한 항목 모두 삭제</button>
   </div>
@@ -103,6 +120,8 @@
   var KEY = 'todo-list-v2', OLD_KEY = 'todo-list-v1';
   var state = { todos: [], missed: [] };
   var filter = 'all';
+  var CATS = { work: '업무', study: '공부', health: '운동', life: '생활', etc: '기타' };
+  var catFilter = 'all';
   var PRIO = { high: ['높음', 0], mid: ['보통', 1], low: ['낮음', 2] };
 
   try {
@@ -142,7 +161,8 @@
       : '아직 할 일이 없어요';
 
     var shown = sorted(todos).filter(function (t) {
-      return filter === 'all' || (filter === 'done') === t.done;
+      return (filter === 'all' || (filter === 'done') === t.done) &&
+             (catFilter === 'all' || (t.cat || 'etc') === catFilter);
     });
 
     var ul = $('list');
@@ -176,6 +196,12 @@
       badge.className = 'badge p-' + p;
       badge.textContent = PRIO[p][0];
       meta.appendChild(badge);
+
+      var c = t.cat || 'etc';
+      var cat = document.createElement('span');
+      cat.className = 'cat';
+      cat.textContent = CATS[c];
+      meta.appendChild(cat);
 
       if (t.due) {
         var due = document.createElement('span');
@@ -230,7 +256,7 @@
       redo.type = 'button';
       redo.textContent = '할 일로 추가';
       redo.onclick = function () {
-        state.todos.push({ id: uid(), text: m.text, done: false, prio: 'mid', due: '' });
+        state.todos.push({ id: uid(), text: m.text, done: false, prio: 'mid', cat: 'etc', due: '' });
         save(); renderTodos();
       };
 
@@ -253,7 +279,7 @@
     e.preventDefault();
     var text = $('input').value.trim();
     if (!text) return;
-    state.todos.push({ id: uid(), text: text, done: false, prio: $('prio').value, due: $('due').value });
+    state.todos.push({ id: uid(), text: text, done: false, prio: $('prio').value, cat: $('cat').value, due: $('due').value });
     $('input').value = '';
     $('due').value = '';
     save(); renderTodos();
@@ -262,6 +288,8 @@
   $('filters').onclick = function (e) {
     if (e.target.dataset.f) { filter = e.target.dataset.f; renderTodos(); }
   };
+
+  $('catFilter').onchange = function () { catFilter = $('catFilter').value; renderTodos(); };
 
   $('clear').onclick = function () {
     state.todos = state.todos.filter(function (t) { return !t.done; });
