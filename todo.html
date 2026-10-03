@@ -90,7 +90,7 @@
   .badge{display:inline-block; padding:1px 8px; border-radius:999px; color:#fff; font-size:11px; font-weight:700}
   .p-high{background:var(--high)} .p-mid{background:var(--mid)} .p-low{background:var(--low)}
   select.cat{padding:1px 6px; border-radius:999px; border:0; color:#fff; font-size:11px; font-weight:700; width:auto; flex:none; cursor:pointer}
-  .catbar{display:flex; gap:6px; margin-bottom:6px}
+  .catbar{display:flex; gap:6px; margin-bottom:10px}
   .catbar select{flex:1; min-width:0}
   .catbar .redo{white-space:nowrap}
   .catpanel{border:1.5px dashed var(--line); border-radius:12px; padding:10px; margin-bottom:10px}
@@ -146,11 +146,6 @@
       </div>
       <button class="add" type="submit">추가</button>
     </form>
-    <div class="filters" id="filters">
-      <button data-f="all" class="on">전체</button>
-      <button data-f="active">진행중</button>
-      <button data-f="done">완료</button>
-    </div>
     <div id="catArea" hidden>
     <div class="catbar">
       <select id="catFilter" aria-label="카테고리 필터" class="catfilter"></select>
@@ -164,6 +159,11 @@
         <button class="add" type="submit">추가</button>
       </form>
     </div>
+    </div>
+    <div class="filters" id="filters">
+      <button data-f="all" class="on">전체</button>
+      <button data-f="active">진행중</button>
+      <button data-f="done">완료</button>
     </div>
     <div class="datebar" id="dateBar" hidden><span id="dateBarText"></span><button class="redo" type="button" id="dateClear">전체 보기</button></div>
     <ul id="list"></ul>
