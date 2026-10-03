@@ -74,6 +74,11 @@
   .qtext{font-size:19px; line-height:1.5; text-wrap:balance}
   .qby{margin-top:6px; font-size:13px; color:var(--muted)}
   .qby:empty{display:none}
+  .xfer{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0}
+  .xfer .redo{padding:8px 12px; font-size:14px}
+  #xferBox{width:100%; resize:vertical; padding:10px 12px; border:1.5px solid var(--line); border-radius:12px; background:var(--soft); color:var(--ink); font-family:inherit; font-size:13px; word-break:break-all}
+  #xferBox:focus{outline:none; border-color:var(--accent)}
+  #xferMsg{margin:0; min-height:1.5em}
   .datebar{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; padding:8px 12px; border-radius:10px; background:var(--soft); color:var(--accent-d); font-size:14px; font-weight:700}
   .datebar[hidden]{display:none}
   h1{font-size:26px; margin-bottom:4px}
@@ -205,6 +210,20 @@
       <button class="add" type="submit">기록</button>
     </form>
     <ul id="missList"></ul>
+  </div>
+
+  <div class="card">
+    <h2>📦 다른 기기로 옮기기</h2>
+    <p class="sub">PC에서 "내보내기"로 만든 코드를 폰에 붙여넣어 "가져오기"를 하면 같은 할 일이 보여요. 반대로도 돼요.</p>
+    <div class="xfer">
+      <button class="redo" type="button" id="exportBtn">내보내기 (코드 복사)</button>
+    </div>
+    <textarea id="xferBox" rows="4" placeholder="여기에 코드가 나와요. 가져올 때는 여기에 코드를 붙여넣으세요." spellcheck="false"></textarea>
+    <div class="xfer">
+      <button class="redo" type="button" id="mergeBtn">가져오기 (합치기)</button>
+      <button class="redo" type="button" id="replaceBtn">가져오기 (덮어쓰기)</button>
+    </div>
+    <p class="sub" id="xferMsg" aria-live="polite"></p>
   </div>
 </div>
 <script>
@@ -651,6 +670,76 @@
     state.missed.push({ id: uid(), date: $('missDate').value, text: text });
     $('missInput').value = '';
     save(); renderMissed();
+  };
+
+  // ---- 다른 기기로 옮기기 ----
+  function encodeState() {
+    var bytes = new TextEncoder().encode(JSON.stringify(state));
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return 'TODO1:' + btoa(bin);
+  }
+  function decodeState(code) {
+    code = code.trim();
+    if (code.indexOf('TODO1:') !== 0) throw new Error('형식이 달라요');
+    var bin = atob(code.slice(6).replace(/\s+/g, ''));
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    var obj = JSON.parse(new TextDecoder().decode(bytes));
+    if (!obj || !Array.isArray(obj.todos)) throw new Error('할 일 데이터가 아니에요');
+    return { todos: obj.todos, missed: obj.missed || [], cats: obj.cats || DEFAULT_CATS };
+  }
+  function xferMsg(t) { $('xferMsg').textContent = t; }
+  function refreshAll() { save(); renderCatControls(); renderTodos(); renderMissed(); }
+
+  $('exportBtn').onclick = function () {
+    var code = encodeState();
+    $('xferBox').value = code;
+    var done = function () { xferMsg('코드를 복사했어요. 다른 기기의 입력칸에 붙여넣으세요.'); };
+    var fallback = function () {
+      $('xferBox').focus(); $('xferBox').select();
+      xferMsg('위 코드를 길게 눌러 복사하세요.');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, fallback);
+    else fallback();
+  };
+
+  $('mergeBtn').onclick = function () {
+    var inc;
+    try { inc = decodeState($('xferBox').value); } catch (e) { xferMsg('가져올 수 없어요. ' + e.message + '.'); return; }
+    var key = function (t) { return t.id || [t.text, t.due, t.cat].join('|'); };
+    var have = {}, added = 0;
+    state.todos.forEach(function (t) { have[key(t)] = true; });
+    inc.todos.forEach(function (t) {
+      if (!have[key(t)]) { if (!t.id) t.id = uid(); state.todos.push(t); have[key(t)] = true; added++; }
+    });
+    var haveM = {};
+    state.missed.forEach(function (m) { haveM[m.id || m.date + '|' + m.text] = true; });
+    inc.missed.forEach(function (m) {
+      var k = m.id || m.date + '|' + m.text;
+      if (!haveM[k]) { if (!m.id) m.id = uid(); state.missed.push(m); haveM[k] = true; added++; }
+    });
+    inc.cats.forEach(function (c) {
+      if (!state.cats.some(function (x) { return x.id === c.id; })) state.cats.push(c);
+    });
+    refreshAll();
+    xferMsg(added ? added + '개를 합쳤어요.' : '새로 추가할 내용이 없어요.');
+  };
+
+  $('replaceBtn').onclick = function () {
+    var btn = $('replaceBtn');
+    if (btn.dataset.armed !== '1') {               // 확인창 대신 한 번 더 누르게 함
+      btn.dataset.armed = '1';
+      btn.textContent = '이 기기의 내용이 지워져요. 한 번 더 누르면 덮어쓰기';
+      return;
+    }
+    btn.dataset.armed = '';
+    btn.textContent = '가져오기 (덮어쓰기)';
+    var inc;
+    try { inc = decodeState($('xferBox').value); } catch (e) { xferMsg('가져올 수 없어요. ' + e.message + '.'); return; }
+    state = inc;
+    refreshAll();
+    xferMsg('덮어썼어요. 할 일 ' + state.todos.length + '개.');
   };
 
   renderCatControls();
