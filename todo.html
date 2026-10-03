@@ -352,15 +352,21 @@
     ["나는 피와 노고와 눈물과 땀밖에 바칠 것이 없습니다.", "윈스턴 처칠"]
   ];
 
+  // 앱을 열 때마다 무작위로 하나 고르고, 직전에 본 것은 피함
+  var quoteIdx = (function () {
+    var last = -1;
+    try { last = parseInt(localStorage.getItem('todo-last-quote'), 10); } catch (e) {}
+    var n = Math.floor(Math.random() * QUOTES.length);
+    if (n === last) n = (n + 1) % QUOTES.length;
+    try { localStorage.setItem('todo-last-quote', String(n)); } catch (e) {}
+    return n;
+  })();
+
   function renderQuote() {
-    var key = dateFilter || today();
-    var q = key.split('-');
-    var n = Math.floor(Date.UTC(+q[0], +q[1] - 1, +q[2]) / 86400000);
-    var item = QUOTES[((n % QUOTES.length) + QUOTES.length) % QUOTES.length];
-    $('qLabel').textContent = dateFilter && dateFilter !== today()
-      ? (+q[1]) + '월 ' + (+q[2]) + '일의 한마디' : '오늘의 한마디';
-    $('qText').textContent = '“' + item[0] + '”';
-    $('qBy').textContent = item[1] ? '— ' + item[1] : '';
+    var item = QUOTES[quoteIdx];
+    $('qLabel').textContent = '오늘의 한마디';
+    $('qText').textContent = '\u201c' + item[0] + '\u201d';
+    $('qBy').textContent = '\u2014 ' + item[1];
   }
 
   function setDetails(open) {
