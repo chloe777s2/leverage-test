@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ff5c9d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TO DO">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>클로이의 TO DO LIST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* 메모먼트 꾹꾹체: 같은 폴더에 fonts/MemomentKkukkukk.woff2 를 두거나 PC에 설치돼 있으면 적용됨 */
+  @font-face{
+    font-family:"MemomentKkukkukk";
+    src:local("Memoment Kkukkukk"), local("MemomentKkukkukk"), local("메모먼트 꾹꾹체"),
+        url("fonts/MemomentKkukkukk.woff2") format("woff2");
+    font-display:swap;
+  }
+  :root{
+    --bg:#ffe3ee; --card:#ffffff; --ink:#4a1f35; --muted:#9a6b82;
+    --accent:#ff5c9d; --accent-d:#e0457f; --line:#f7d3e2; --soft:#fff3f8;
+    --high:#e5383b; --mid:#ff8fb8; --low:#b79cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"MemomentKkukkukk","Gaegu",-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--bg); color:var(--ink); min-height:100vh;
+    display:flex; justify-content:center; padding:20px 16px 40px;
+    line-height:1.55; word-break:keep-all;
+  }
+  .wrap{width:100%; max-width:520px; display:flex; flex-direction:column; gap:16px}
+  .card{background:var(--card); border-radius:20px; padding:28px 22px; box-shadow:0 10px 40px rgba(255,92,157,.25)}
+  .pagetitle{text-align:center; font-size:28px; color:var(--ink); margin:4px 0 0}
+  .head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  .head h1{margin:0; font-size:24px}
+  .nav{display:flex; gap:6px}
+  .nav button{border:1.5px solid var(--line); background:#fff; color:var(--muted); border-radius:10px; padding:4px 12px; font-size:16px; font-weight:700}
+  .nav button{display:inline-flex; align-items:center; justify-content:center}
+  .nav button:hover{border-color:var(--accent); color:var(--accent-d)}
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
+  .dow{text-align:center; font-size:12px; font-weight:700; color:var(--muted); padding-bottom:2px}
+  .dow:first-child, .day.sun .num{color:var(--high)}
+  .day{
+    min-height:54px; border:1.5px solid var(--line); border-radius:10px; background:#fff;
+    padding:4px 3px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:3px;
+    color:var(--ink); font-size:14px;
+  }
+  .day.blank{border:0; background:none; cursor:default}
+  .day.today .num{background:var(--accent); color:#fff; border-radius:999px; padding:0 7px}
+  .day.sel{border-color:var(--accent); background:var(--soft); box-shadow:0 0 0 1.5px var(--accent)}
+  .dots{display:flex; flex-wrap:wrap; justify-content:center; gap:3px}
+  .dot{display:inline-block; width:8px; height:8px; border-radius:50%}
+  .dot.done{opacity:.3}
+  .dot.miss{background:none !important; border:1.5px solid var(--high)}
+  .more{font-size:10px; color:var(--muted)}
+  .legend{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:12px; font-size:12px; color:var(--muted)}
+  .legend span{display:inline-flex; align-items:center; gap:4px}
+  #form{margin-bottom:8px}
+  #addBtn[hidden]{display:none}
+  #addBtn{display:block; width:100%; margin-bottom:16px; padding:12px 18px}
+  .more-btn{flex:1 1 100%; padding:6px 0; border:0; background:none; color:var(--muted); font-size:14px; font-weight:700; text-align:left}
+  .more-btn:hover{color:var(--accent-d)}
+  .details{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:8px}
+  .details[hidden], #catArea[hidden]{display:none}
+  .quote{background:var(--soft); text-align:center; padding:20px 22px}
+  .qlabel{font-size:12px; font-weight:700; color:var(--accent-d); letter-spacing:.04em; margin-bottom:6px}
+  .qtext{font-size:19px; line-height:1.5; text-wrap:balance}
+  .qby{margin-top:6px; font-size:13px; color:var(--muted)}
+  .qby:empty{display:none}
+  .datebar{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; padding:8px 12px; border-radius:10px; background:var(--soft); color:var(--accent-d); font-size:14px; font-weight:700}
+  .datebar[hidden]{display:none}
+  h1{font-size:26px; margin-bottom:4px}
+  h2{font-size:20px; margin-bottom:4px}
+  .sub{color:var(--muted); font-size:14px; margin-bottom:18px}
+  form{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px}
+  input[type=text], input[type=date], select{
+    padding:12px 14px; font-size:16px; font-family:inherit;
+    border:1.5px solid var(--line); border-radius:12px; background:var(--soft); color:var(--ink);
+  }
+  input:focus, select:focus{outline:none; border-color:var(--accent)}
+  input[type=text]{flex:1 1 100%; min-width:0}
+  input[type=date], select{flex:1 1 0; min-width:0}
+  button, input, select{font-family:inherit}
+  button{cursor:pointer}
+  .add{flex:1 1 100%; padding:12px 18px; border:0; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:700}
+  .add:hover{background:var(--accent-d)}
+  .filters{display:flex; gap:6px; margin-bottom:12px}
+  .filters button{
+    flex:1; padding:8px 0; border:1.5px solid var(--line); border-radius:10px;
+    background:#fff; color:var(--muted); font-size:14px; font-weight:600;
+  }
+  .filters button.on{background:var(--ink); border-color:var(--ink); color:#fff}
+  ul{list-style:none}
+  li{display:flex; align-items:center; gap:10px; padding:12px 4px; border-bottom:1px solid var(--line)}
+  li input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent); flex-shrink:0}
+  li .body{flex:1; min-width:0}
+  li .text{overflow-wrap:anywhere}
+  li .meta{display:flex; gap:6px; align-items:center; margin-top:2px; font-size:12px; color:var(--muted)}
+  li.done .text{color:var(--muted); text-decoration:line-through}
+  .badge{display:inline-block; padding:1px 8px; border-radius:999px; color:#fff; font-size:11px; font-weight:700}
+  .p-high{background:var(--high)} .p-mid{background:var(--mid)} .p-low{background:var(--low)}
+  select.cat{padding:1px 6px; border-radius:999px; border:0; color:#fff; font-size:11px; font-weight:700; width:auto; flex:none; cursor:pointer}
+  .catbar{display:flex; gap:6px; margin-bottom:10px}
+  .catbar select{flex:1; min-width:0}
+  .catbar .redo{white-space:nowrap}
+  .catpanel{border:1.5px dashed var(--line); border-radius:12px; padding:10px; margin-bottom:10px}
+  .catpanel[hidden]{display:none}
+  .catrow{display:flex; gap:8px; align-items:center; margin-bottom:8px}
+  .catrow input[type=text]{flex:1 1 0; min-width:0; padding:8px 10px; font-size:15px}
+  .catrow input[type=color]{width:36px; height:36px; padding:0; border:1.5px solid var(--line); border-radius:50%; background:none; cursor:pointer}
+  .catrow .add{flex:0 0 auto; padding:8px 14px}
+  .catfilter{padding:8px 12px; font-size:14px}
+  .overdue{color:var(--high); font-weight:700}
+  .icon{border:0; background:none; color:var(--muted); font-size:20px; line-height:1; padding:4px 8px}
+  .icon:hover{color:var(--accent-d)}
+  .empty{text-align:center; color:var(--muted); padding:28px 0; font-size:15px}
+  .link{margin-top:14px; border:0; background:none; color:var(--muted); font-size:13px; text-decoration:underline}
+  .daterow{display:flex; gap:8px; margin-bottom:12px}
+  .daterow input{flex:1}
+  .miss form{margin-bottom:8px}
+  .miss input[type=text]{flex:1 1 0}
+  .miss .add{flex:0 0 auto}
+  .redo{font-size:12px; border:1.5px solid var(--line); background:#fff; color:var(--muted); border-radius:8px; padding:3px 8px}
+  .redo:hover{border-color:var(--accent); color:var(--accent-d)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="pagetitle">👧 클로이의 TO DO LIST</h1>
+  <div class="card">
+    <div class="head">
+      <h1 id="calTitle"></h1>
+      <div class="nav">
+        <button type="button" id="prev" aria-label="이전 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L4 7l5 5"/></svg></button>
+        <button type="button" id="todayBtn">오늘</button>
+        <button type="button" id="next" aria-label="다음 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2l5 5-5 5"/></svg></button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="card quote">
+    <p class="qlabel" id="qLabel"></p>
+    <p class="qtext" id="qText"></p>
+    <p class="qby" id="qBy"></p>
+  </div>
+
+  <div class="card">
+    <h1>📝 할 일 목록</h1>
+    <p class="sub" id="count"></p>
+    <form id="form">
+      <button class="more-btn" type="button" id="detailBtn" aria-expanded="false">자세히 보기</button>
+      <div class="details" id="details" hidden>
+      <input type="text" id="input" placeholder="할 일을 입력하세요" maxlength="200" autocomplete="off">
+      <input type="date" id="due" aria-label="마감일">
+      <select id="cat" aria-label="카테고리"></select>
+      <select id="prio" aria-label="우선순위">
+        <option value="high">우선순위: 높음</option>
+        <option value="mid" selected>우선순위: 보통</option>
+        <option value="low">우선순위: 낮음</option>
+      </select>
+      </div>
+    </form>
+    <div id="catArea" hidden>
+    <div class="catbar">
+      <select id="catFilter" aria-label="카테고리 필터" class="catfilter"></select>
+      <button class="redo" type="button" id="catManage">카테고리 편집</button>
+    </div>
+    <div class="catpanel" id="catPanel" hidden>
+      <div id="catRows"></div>
+      <form class="catrow" id="catForm">
+        <input type="color" id="newCatColor" value="#ff5c9d" aria-label="색상">
+        <input type="text" id="newCatName" placeholder="새 카테고리 이름" maxlength="20" autocomplete="off">
+        <button class="add" type="submit">추가</button>
+      </form>
+    </div>
+    </div>
+    <button class="add" id="addBtn" type="submit" form="form" hidden>추가</button>
+    <div class="filters" id="filters">
+      <button data-f="all" class="on">전체</button>
+      <button data-f="active">진행중</button>
+      <button data-f="done">완료</button>
+    </div>
+    <div class="datebar" id="dateBar" hidden><span id="dateBarText"></span><button class="redo" type="button" id="dateClear">전체 보기</button></div>
+    <ul id="list"></ul>
+    <button class="link" id="clear">완료한 항목 모두 삭제</button>
+  </div>
+
+  <div class="card miss">
+    <h2>😢 그날 못한 일</h2>
+    <p class="sub">날짜를 고르고, 그날 끝내지 못한 일을 적어두세요.</p>
+    <div class="daterow">
+      <input type="date" id="missDate" aria-label="날짜">
+    </div>
+    <form id="missForm">
+      <input type="text" id="missInput" placeholder="못한 일과 이유를 적어보세요" maxlength="200" autocomplete="off">
+      <button class="add" type="submit">기록</button>
+    </form>
+    <ul id="missList"></ul>
+  </div>
+</div>
+<script>
+  var KEY = 'todo-list-v2', OLD_KEY = 'todo-list-v1';
+  var DEFAULT_CATS = [
+    { id: 'work', name: '업무', color: '#ff5c9d' },
+    { id: 'study', name: '공부', color: '#a78bfa' },
+    { id: 'health', name: '운동', color: '#34c4a0' },
+    { id: 'life', name: '생활', color: '#f59e0b' },
+    { id: 'etc', name: '기타', color: '#94a3b8' }
+  ];
+  var state = { todos: [], missed: [], cats: DEFAULT_CATS };
+  var filter = 'all';
+  var catFilter = 'all';
+  var dateFilter = '';
+  var DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  var nowD = new Date();
+  var viewY = nowD.getFullYear(), viewM = nowD.getMonth();
+  var PRIO = { high: ['높음', 0], mid: ['보통', 1], low: ['낮음', 2] };
+
+  try {
+    var raw = localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY);
+    var parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) state.todos = parsed;          // v1: 배열만 저장돼 있었음
+    else if (parsed) state = { todos: parsed.todos || [], missed: parsed.missed || [], cats: parsed.cats || DEFAULT_CATS };
+  } catch (e) {}
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function sorted(list) {
+    return list.slice().sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      var pa = PRIO[a.prio || 'mid'][1], pb = PRIO[b.prio || 'mid'][1];
+      if (pa !== pb) return pa - pb;
+      if (a.due && b.due) return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+      if (a.due || b.due) return a.due ? -1 : 1;                // 마감일 있는 항목 먼저
+      return 0;
+    });
+  }
+
+  function catById(id) {
+    for (var i = 0; i < state.cats.length; i++) if (state.cats[i].id === id) return state.cats[i];
+    return { id: '', name: '미분류', color: '#94a3b8' };
+  }
+
+  function fillSelect(sel, withAll, withNone, current) {
+    sel.innerHTML = '';
+    var add = function (v, label) {
+      var o = document.createElement('option');
+      o.value = v; o.textContent = label;
+      sel.appendChild(o);
+    };
+    if (withAll) add('all', '모든 카테고리');
+    state.cats.forEach(function (c) { add(c.id, c.name); });
+    if (withNone) add('', '미분류');
+    sel.value = current;
+    if (sel.value !== current) sel.selectedIndex = 0;
+  }
+
+  function renderCatControls() {
+    var cur = $('cat').value;
+    fillSelect($('cat'), false, true, cur || (state.cats[0] ? state.cats[0].id : ''));
+    if (catFilter !== 'all' && !state.cats.some(function (c) { return c.id === catFilter; })) catFilter = 'all';
+    fillSelect($('catFilter'), true, false, catFilter);
+
+    var rows = $('catRows');
+    rows.innerHTML = '';
+    state.cats.forEach(function (c) {
+      var row = document.createElement('div');
+      row.className = 'catrow';
+
+      var color = document.createElement('input');
+      color.type = 'color';
+      color.value = c.color;
+      color.setAttribute('aria-label', '색상');
+      color.onchange = function () { c.color = color.value; save(); renderCatControls(); renderTodos(); };
+
+      var name = document.createElement('input');
+      name.type = 'text';
+      name.value = c.name;
+      name.maxLength = 20;
+      name.setAttribute('aria-label', '카테고리 이름');
+      name.onchange = function () {
+        c.name = name.value.trim() || c.name;
+        save(); renderCatControls(); renderTodos();
+      };
+
+      var del = document.createElement('button');
+      del.className = 'icon';
+      del.type = 'button';
+      del.textContent = '×';
+      del.setAttribute('aria-label', '카테고리 삭제');
+      del.onclick = function () {
+        var used = state.todos.filter(function (t) { return t.cat === c.id; }).length;
+        if (used && del.dataset.armed !== '1') {      // 확인창 대신 버튼을 한 번 더 누르게 함
+          del.dataset.armed = '1';
+          del.textContent = used + '개 미분류로 바뀜. 한 번 더 누르면 삭제';
+          del.style.fontSize = '12px';
+          return;
+        }
+        state.todos.forEach(function (t) { if (t.cat === c.id) t.cat = ''; });
+        state.cats = state.cats.filter(function (x) { return x !== c; });
+        save(); renderCatControls(); renderTodos();
+      };
+
+      row.appendChild(color); row.appendChild(name); row.appendChild(del);
+      rows.appendChild(row);
+    });
+  }
+
+  function ymd(y, m, d) { return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
+
+  var QUOTES = [
+    ["천재는 1%의 영감과 99%의 노력으로 이루어진다.", "토머스 에디슨"],
+    ["나는 실패한 것이 아니다. 효과가 없는 1만 가지 방법을 발견했을 뿐이다.", "토머스 에디슨"],
+    ["상상력은 지식보다 중요하다.", "알베르트 아인슈타인"],
+    ["인생은 자전거를 타는 것과 같다. 균형을 잡으려면 계속 움직여야 한다.", "알베르트 아인슈타인"],
+    ["중요한 것은 질문을 멈추지 않는 것이다.", "알베르트 아인슈타인"],
+    ["우리가 두려워해야 할 것은 두려움 그 자체뿐이다.", "프랭클린 D. 루스벨트"],
+    ["불가능해 보이는 일도 해내기 전까지는 늘 그렇게 보인다.", "넬슨 만델라"],
+    ["당신의 시간은 한정되어 있다. 다른 사람의 삶을 사느라 낭비하지 마라.", "스티브 잡스"],
+    ["항상 갈망하라. 우직하게 나아가라.", "스티브 잡스"],
+    ["죽음은 삶이 만든 최고의 발명품이다.", "스티브 잡스"],
+    ["내가 더 멀리 볼 수 있었던 것은 거인의 어깨 위에 서 있었기 때문이다.", "아이작 뉴턴"],
+    ["너 자신을 알라.", "소크라테스"],
+    ["검토되지 않은 삶은 살 가치가 없다.", "소크라테스"],
+    ["나는 생각한다, 고로 존재한다.", "르네 데카르트"],
+    ["일찍 자고 일찍 일어나는 사람은 건강하고 부유하고 현명해진다.", "벤저민 프랭클린"],
+    ["한 사람에게는 작은 한 걸음이지만, 인류에게는 거대한 도약이다.", "닐 암스트롱"],
+    ["나에게는 꿈이 있습니다.", "마틴 루서 킹"],
+    ["신에게는 아직 열두 척의 배가 남아 있사옵니다.", "이순신"],
+    ["죽고자 하면 살 것이고, 살고자 하면 죽을 것이다.", "이순신"],
+    ["하루라도 책을 읽지 않으면 입안에 가시가 돋는다.", "안중근"],
+    ["나는 우리나라가 세계에서 가장 아름다운 나라가 되기를 원한다.", "김구"],
+    ["죽는 날까지 하늘을 우러러 한 점 부끄럼이 없기를.", "윤동주"],
+    ["나는 살면서 실패하고, 또 실패했다. 그것이 내가 성공한 이유다.", "마이클 조던"],
+    ["성공을 축하하는 것도 좋지만, 실패에서 교훈을 얻는 것이 더 중요하다.", "빌 게이츠"],
+    ["배우고 때때로 익히면 또한 기쁘지 아니한가.", "공자"],
+    ["세 사람이 길을 가면 그중에 반드시 내 스승이 있다.", "공자"],
+    ["천 리 길도 한 걸음부터.", "노자"],
+    ["하늘이 장차 큰일을 맡기려 할 때는 반드시 먼저 그 마음을 괴롭게 한다.", "맹자"],
+    ["혼자서는 할 수 있는 일이 적지만, 함께라면 많은 일을 할 수 있다.", "헬렌 켈러"],
+    ["발밑만 보지 말고 별을 올려다보라.", "스티븐 호킹"],
+    ["배움을 멈추는 사람은 스무 살이든 여든 살이든 늙은 것이다.", "헨리 포드"],
+    ["인생은 가까이서 보면 비극이지만, 멀리서 보면 희극이다.", "찰리 채플린"],
+    ["나는 피와 노고와 눈물과 땀밖에 바칠 것이 없습니다.", "윈스턴 처칠"]
+  ];
+
+  // 앱을 열 때마다 무작위로 하나 고르고, 직전에 본 것은 피함
+  var quoteIdx = (function () {
+    var last = -1;
+    try { last = parseInt(localStorage.getItem('todo-last-quote'), 10); } catch (e) {}
+    var n = Math.floor(Math.random() * QUOTES.length);
+    if (n === last) n = (n + 1) % QUOTES.length;
+    try { localStorage.setItem('todo-last-quote', String(n)); } catch (e) {}
+    return n;
+  })();
+
+  function renderQuote() {
+    var item = QUOTES[quoteIdx];
+    $('qLabel').textContent = '오늘의 한마디';
+    $('qText').textContent = '\u201c' + item[0] + '\u201d';
+    $('qBy').textContent = '\u2014 ' + item[1];
+  }
+
+  function setDetails(open) {
+    $('details').hidden = !open;
+    $('catArea').hidden = !open;
+    $('addBtn').hidden = !open;
+    if (open && arguments[1]) $('input').focus();
+    $('detailBtn').textContent = open ? '접기' : (catFilter !== 'all' ? '자세히 보기 (카테고리 필터 적용 중)' : '자세히 보기');
+    $('detailBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function selectDate(key) {
+    dateFilter = (dateFilter === key) ? '' : key;
+    $('due').value = dateFilter;
+    if (dateFilter) { $('missDate').value = dateFilter; setDetails(true); }
+    renderTodos(); renderMissed();
+  }
+
+  function renderGrid() {
+    $('calTitle').textContent = '\uD83D\uDCC5 ' + viewY + '년 ' + (viewM + 1) + '월';
+    var grid = $('grid');
+    grid.innerHTML = '';
+    DOW.forEach(function (d) {
+      var el = document.createElement('div');
+      el.className = 'dow'; el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    var first = new Date(viewY, viewM, 1).getDay();
+    var days = new Date(viewY, viewM + 1, 0).getDate();
+    for (var i = 0; i < first; i++) {
+      var b = document.createElement('div'); b.className = 'day blank'; grid.appendChild(b);
+    }
+    for (var d = 1; d <= days; d++) {
+      (function (d) {
+        var key = ymd(viewY, viewM, d);
+        var cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'day' + ((first + d - 1) % 7 === 0 ? ' sun' : '') +
+          (key === today() ? ' today' : '') + (key === dateFilter ? ' sel' : '');
+        cell.setAttribute('aria-label', key);
+
+        var num = document.createElement('span');
+        num.className = 'num'; num.textContent = d;
+        cell.appendChild(num);
+
+        var all = state.todos.filter(function (t) { return t.due === key; })
+          .map(function (t) { return { color: catById(t.cat || '').color, done: t.done }; })
+          .concat(state.missed.filter(function (m) { return m.date === key; })
+            .map(function () { return { miss: true }; }));
+        var dots = document.createElement('div');
+        dots.className = 'dots';
+        all.slice(0, 4).forEach(function (x) {
+          var dot = document.createElement('span');
+          dot.className = 'dot' + (x.done ? ' done' : '') + (x.miss ? ' miss' : '');
+          if (!x.miss) dot.style.background = x.color;
+          dots.appendChild(dot);
+        });
+        cell.appendChild(dots);
+        if (all.length > 4) {
+          var more = document.createElement('span');
+          more.className = 'more'; more.textContent = '+' + (all.length - 4);
+          cell.appendChild(more);
+        }
+        cell.onclick = function () { selectDate(key); };
+        grid.appendChild(cell);
+      })(d);
+    }
+
+    var lg = $('legend');
+    lg.innerHTML = '';
+    var item = function (color, miss, label) {
+      var sp = document.createElement('span');
+      var dot = document.createElement('i');
+      dot.className = 'dot' + (miss ? ' miss' : '');
+      if (color) dot.style.background = color;
+      sp.appendChild(dot); sp.appendChild(document.createTextNode(label));
+      lg.appendChild(sp);
+    };
+    state.cats.forEach(function (c) { item(c.color, false, c.name); });
+    item('', true, '못한 일');
+  }
+
+  function renderTodos() {
+    var todos = dateFilter ? state.todos.filter(function (t) { return t.due === dateFilter; }) : state.todos;
+    var left = todos.filter(function (t) { return !t.done; }).length;
+    var when = dateFilter ? (+dateFilter.split('-')[1]) + '월 ' + (+dateFilter.split('-')[2]) + '일 · ' : '';
+    $('count').textContent = todos.length
+      ? when + '남은 할 일 ' + left + '개 / 전체 ' + todos.length + '개'
+      : (dateFilter ? when + '마감인 할 일이 없어요' : '아직 할 일이 없어요');
+
+    var shown = sorted(todos).filter(function (t) {
+      return (filter === 'all' || (filter === 'done') === t.done) &&
+             (catFilter === 'all' || t.cat === catFilter) &&
+             (!dateFilter || t.due === dateFilter);
+    });
+
+    var ul = $('list');
+    ul.innerHTML = '';
+    if (!shown.length) {
+      var empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = '표시할 항목이 없어요';
+      ul.appendChild(empty);
+    }
+    shown.forEach(function (t) {
+      var li = document.createElement('li');
+      if (t.done) li.className = 'done';
+
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = t.done;
+      cb.setAttribute('aria-label', '완료 표시');
+      cb.onchange = function () { t.done = cb.checked; save(); renderTodos(); };
+
+      var body = document.createElement('div');
+      body.className = 'body';
+      var text = document.createElement('div');
+      text.className = 'text';
+      text.textContent = t.text;
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+
+      var p = t.prio || 'mid';
+      var badge = document.createElement('span');
+      badge.className = 'badge p-' + p;
+      badge.textContent = PRIO[p][0];
+      meta.appendChild(badge);
+
+      var cat = document.createElement('select');
+      cat.className = 'cat';
+      cat.setAttribute('aria-label', '카테고리 변경');
+      fillSelect(cat, false, true, t.cat || '');
+      cat.style.background = catById(t.cat || '').color;
+      cat.onchange = function () { t.cat = cat.value; save(); renderTodos(); };
+      meta.appendChild(cat);
+
+      if (t.due) {
+        var due = document.createElement('span');
+        var late = !t.done && t.due < today();
+        due.textContent = '마감 ' + t.due + (late ? ' (지남)' : '');
+        if (late) due.className = 'overdue';
+        meta.appendChild(due);
+      }
+      body.appendChild(text); body.appendChild(meta);
+
+      var del = document.createElement('button');
+      del.className = 'icon';
+      del.type = 'button';
+      del.textContent = '×';
+      del.setAttribute('aria-label', '삭제');
+      del.onclick = function () {
+        state.todos = state.todos.filter(function (x) { return x !== t; });
+        save(); renderTodos();
+      };
+
+      li.appendChild(cb); li.appendChild(body); li.appendChild(del);
+      ul.appendChild(li);
+    });
+
+    Array.prototype.forEach.call($('filters').children, function (b) {
+      b.className = b.dataset.f === filter ? 'on' : '';
+    });
+
+    $('dateBar').hidden = !dateFilter;
+    if (dateFilter) {
+      var q = dateFilter.split('-');
+      $('dateBarText').textContent = (+q[1]) + '월 ' + (+q[2]) + '일 마감만 보는 중';
+    }
+    renderGrid();
+    renderQuote();
+  }
+
+  function renderMissed() {
+    var date = $('missDate').value;
+    var items = state.missed.filter(function (m) { return m.date === date; });
+    var ul = $('missList');
+    ul.innerHTML = '';
+    if (!items.length) {
+      var empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = '이 날 기록된 못한 일이 없어요';
+      ul.appendChild(empty);
+    }
+    items.forEach(function (m) {
+      var li = document.createElement('li');
+      var body = document.createElement('div');
+      body.className = 'body';
+      var text = document.createElement('div');
+      text.className = 'text';
+      text.textContent = m.text;
+      body.appendChild(text);
+
+      var redo = document.createElement('button');
+      redo.className = 'redo';
+      redo.type = 'button';
+      redo.textContent = '할 일로 추가';
+      redo.onclick = function () {
+        state.todos.push({ id: uid(), text: m.text, done: false, prio: 'mid', cat: '', due: '' });
+        save(); renderTodos();
+      };
+
+      var del = document.createElement('button');
+      del.className = 'icon';
+      del.type = 'button';
+      del.textContent = '×';
+      del.setAttribute('aria-label', '삭제');
+      del.onclick = function () {
+        state.missed = state.missed.filter(function (x) { return x !== m; });
+        save(); renderMissed();
+      };
+
+      li.appendChild(body); li.appendChild(redo); li.appendChild(del);
+      ul.appendChild(li);
+    });
+    renderGrid();
+  }
+
+  $('form').onsubmit = function (e) {
+    e.preventDefault();
+    var text = $('input').value.trim();
+    if (!text) return;
+    state.todos.push({ id: uid(), text: text, done: false, prio: $('prio').value, cat: $('cat').value, due: $('due').value });
+    $('input').value = '';
+    $('due').value = dateFilter;
+    save(); renderTodos();
+  };
+
+  $('filters').onclick = function (e) {
+    if (e.target.dataset.f) { filter = e.target.dataset.f; renderTodos(); }
+  };
+
+  $('catFilter').onchange = function () { catFilter = $('catFilter').value; setDetails(true); renderTodos(); };
+
+  $('detailBtn').onclick = function () { setDetails($('details').hidden, true); };
+
+  $('prev').onclick = function () { viewM--; if (viewM < 0) { viewM = 11; viewY--; } renderGrid(); };
+  $('next').onclick = function () { viewM++; if (viewM > 11) { viewM = 0; viewY++; } renderGrid(); };
+  $('todayBtn').onclick = function () {
+    var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth(); renderGrid();
+  };
+  $('dateClear').onclick = function () { dateFilter = ''; $('due').value = ''; renderTodos(); };
+
+  $('catManage').onclick = function () { $('catPanel').hidden = !$('catPanel').hidden; };
+  $('catForm').onsubmit = function (e) {
+    e.preventDefault();
+    var name = $('newCatName').value.trim();
+    if (!name) return;
+    state.cats.push({ id: uid(), name: name, color: $('newCatColor').value });
+    $('newCatName').value = '';
+    save(); renderCatControls();
+  };
+
+  $('clear').onclick = function () {
+    state.todos = state.todos.filter(function (t) { return !t.done; });
+    save(); renderTodos();
+  };
+
+  $('missDate').value = today();
+  $('missDate').onchange = function () {
+    if (!$('missDate').value) $('missDate').value = today();
+    dateFilter = $('missDate').value;          // 못한 일 날짜를 바꾸면 선택한 날짜도 같이 바뀜
+    $('due').value = dateFilter;
+    var q = dateFilter.split('-');
+    viewY = +q[0]; viewM = +q[1] - 1;
+    renderTodos(); renderMissed();
+  };
+  $('missForm').onsubmit = function (e) {
+    e.preventDefault();
+    var text = $('missInput').value.trim();
+    if (!text) return;
+    state.missed.push({ id: uid(), date: $('missDate').value, text: text });
+    $('missInput').value = '';
+    save(); renderMissed();
+  };
+
+  renderCatControls();
+  renderTodos();
+  renderMissed();
+</script>
+</body>
+</html>
