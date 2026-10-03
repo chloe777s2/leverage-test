@@ -53,6 +53,8 @@
   .more{font-size:10px; color:var(--muted)}
   .legend{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:12px; font-size:12px; color:var(--muted)}
   .legend span{display:inline-flex; align-items:center; gap:4px}
+  #form{margin-bottom:8px}
+  #addBtn{display:block; width:100%; margin-bottom:16px; padding:12px 18px}
   .more-btn{flex:1 1 100%; padding:6px 0; border:0; background:none; color:var(--muted); font-size:14px; font-weight:700; text-align:left}
   .more-btn:hover{color:var(--accent-d)}
   .details{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:8px}
@@ -144,7 +146,6 @@
         <option value="low">우선순위: 낮음</option>
       </select>
       </div>
-      <button class="add" type="submit">추가</button>
     </form>
     <div id="catArea" hidden>
     <div class="catbar">
@@ -160,6 +161,7 @@
       </form>
     </div>
     </div>
+    <button class="add" id="addBtn" type="submit" form="form">추가</button>
     <div class="filters" id="filters">
       <button data-f="all" class="on">전체</button>
       <button data-f="active">진행중</button>
