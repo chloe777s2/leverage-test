@@ -387,11 +387,12 @@
   }
 
   function renderTodos() {
-    var todos = state.todos;
+    var todos = dateFilter ? state.todos.filter(function (t) { return t.due === dateFilter; }) : state.todos;
     var left = todos.filter(function (t) { return !t.done; }).length;
+    var when = dateFilter ? (+dateFilter.split('-')[1]) + '월 ' + (+dateFilter.split('-')[2]) + '일 · ' : '';
     $('count').textContent = todos.length
-      ? '남은 할 일 ' + left + '개 / 전체 ' + todos.length + '개'
-      : '아직 할 일이 없어요';
+      ? when + '남은 할 일 ' + left + '개 / 전체 ' + todos.length + '개'
+      : (dateFilter ? when + '마감인 할 일이 없어요' : '아직 할 일이 없어요');
 
     var shown = sorted(todos).filter(function (t) {
       return (filter === 'all' || (filter === 'done') === t.done) &&
@@ -562,7 +563,11 @@
   $('missDate').value = today();
   $('missDate').onchange = function () {
     if (!$('missDate').value) $('missDate').value = today();
-    renderMissed();
+    dateFilter = $('missDate').value;          // 못한 일 날짜를 바꾸면 선택한 날짜도 같이 바뀜
+    $('due').value = dateFilter;
+    var q = dateFilter.split('-');
+    viewY = +q[0]; viewM = +q[1] - 1;
+    renderTodos(); renderMissed();
   };
   $('missForm').onsubmit = function (e) {
     e.preventDefault();
