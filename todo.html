@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>투두 리스트</title>
+<style>
+  :root{
+    --bg:#0f1b33; --card:#ffffff; --ink:#14213d; --muted:#5c6785;
+    --accent:#ff6b35; --accent-d:#e0561f; --line:#e3e7f0; --soft:#f3f5fa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--bg); color:var(--ink); min-height:100vh;
+    display:flex; justify-content:center; padding:20px 16px 40px;
+    line-height:1.55; word-break:keep-all;
+  }
+  .wrap{width:100%; max-width:520px}
+  .card{background:var(--card); border-radius:20px; padding:28px 22px; box-shadow:0 10px 40px rgba(0,0,0,.3)}
+  h1{font-size:26px; margin-bottom:4px}
+  .count{color:var(--muted); font-size:14px; margin-bottom:18px}
+  form{display:flex; gap:8px; margin-bottom:16px}
+  input[type=text]{
+    flex:1; min-width:0; padding:12px 14px; font-size:16px; font-family:inherit;
+    border:1.5px solid var(--line); border-radius:12px; background:var(--soft); color:var(--ink);
+  }
+  input[type=text]:focus{outline:none; border-color:var(--accent)}
+  button{font-family:inherit; cursor:pointer}
+  .add{padding:0 18px; border:0; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:700}
+  .add:hover{background:var(--accent-d)}
+  .filters{display:flex; gap:6px; margin-bottom:12px}
+  .filters button{
+    flex:1; padding:8px 0; border:1.5px solid var(--line); border-radius:10px;
+    background:#fff; color:var(--muted); font-size:14px; font-weight:600;
+  }
+  .filters button.on{background:var(--ink); border-color:var(--ink); color:#fff}
+  ul{list-style:none}
+  li{display:flex; align-items:center; gap:10px; padding:12px 4px; border-bottom:1px solid var(--line)}
+  li input{width:20px; height:20px; accent-color:var(--accent); flex-shrink:0}
+  li span{flex:1; overflow-wrap:anywhere}
+  li.done span{color:var(--muted); text-decoration:line-through}
+  li .del{border:0; background:none; color:var(--muted); font-size:20px; line-height:1; padding:4px 8px}
+  li .del:hover{color:var(--accent-d)}
+  .empty{text-align:center; color:var(--muted); padding:28px 0; font-size:15px}
+  .clear{margin-top:14px; border:0; background:none; color:var(--muted); font-size:13px; text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>할 일 목록</h1>
+    <p class="count" id="count"></p>
+    <form id="form">
+      <input type="text" id="input" placeholder="할 일을 입력하세요" maxlength="200" autocomplete="off">
+      <button class="add" type="submit">추가</button>
+    </form>
+    <div class="filters" id="filters">
+      <button data-f="all" class="on">전체</button>
+      <button data-f="active">진행중</button>
+      <button data-f="done">완료</button>
+    </div>
+    <ul id="list"></ul>
+    <button class="clear" id="clear">완료한 항목 모두 삭제</button>
+  </div>
+</div>
+<script>
+  var KEY = 'todo-list-v1';
+  var todos = [], filter = 'all';
+  try { todos = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) {}
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(todos)); } catch (e) {}
+  }
+
+  function render() {
+    var left = todos.filter(function (t) { return !t.done; }).length;
+    $('count').textContent = todos.length
+      ? '남은 할 일 ' + left + '개 / 전체 ' + todos.length + '개'
+      : '아직 할 일이 없어요';
+
+    var shown = todos.filter(function (t) {
+      return filter === 'all' || (filter === 'done') === t.done;
+    });
+
+    var ul = $('list');
+    ul.innerHTML = '';
+    if (!shown.length) {
+      var empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = '표시할 항목이 없어요';
+      ul.appendChild(empty);
+    }
+    shown.forEach(function (t) {
+      var li = document.createElement('li');
+      if (t.done) li.className = 'done';
+
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = t.done;
+      cb.setAttribute('aria-label', '완료 표시');
+      cb.onchange = function () { t.done = cb.checked; save(); render(); };
+
+      var span = document.createElement('span');
+      span.textContent = t.text;
+
+      var del = document.createElement('button');
+      del.className = 'del';
+      del.type = 'button';
+      del.textContent = '×';
+      del.setAttribute('aria-label', '삭제');
+      del.onclick = function () {
+        todos = todos.filter(function (x) { return x !== t; });
+        save(); render();
+      };
+
+      li.appendChild(cb); li.appendChild(span); li.appendChild(del);
+      ul.appendChild(li);
+    });
+
+    Array.prototype.forEach.call($('filters').children, function (b) {
+      b.className = b.dataset.f === filter ? 'on' : '';
+    });
+  }
+
+  $('form').onsubmit = function (e) {
+    e.preventDefault();
+    var text = $('input').value.trim();
+    if (!text) return;
+    todos.push({ text: text, done: false });
+    $('input').value = '';
+    save(); render();
+  };
+
+  $('filters').onclick = function (e) {
+    if (e.target.dataset.f) { filter = e.target.dataset.f; render(); }
+  };
+
+  $('clear').onclick = function () {
+    todos = todos.filter(function (t) { return !t.done; });
+    save(); render();
+  };
+
+  render();
+</script>
+</body>
+</html>
