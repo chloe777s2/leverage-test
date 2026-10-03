@@ -53,6 +53,10 @@
   .more{font-size:10px; color:var(--muted)}
   .legend{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:12px; font-size:12px; color:var(--muted)}
   .legend span{display:inline-flex; align-items:center; gap:4px}
+  .more-btn{flex:1 1 100%; padding:6px 0; border:0; background:none; color:var(--muted); font-size:14px; font-weight:700; text-align:left}
+  .more-btn:hover{color:var(--accent-d)}
+  .details{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:8px}
+  .details[hidden]{display:none}
   .datebar{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; padding:8px 12px; border-radius:10px; background:var(--soft); color:var(--accent-d); font-size:14px; font-weight:700}
   .datebar[hidden]{display:none}
   h1{font-size:26px; margin-bottom:4px}
@@ -130,6 +134,8 @@
     <p class="sub" id="count"></p>
     <form id="form">
       <input type="text" id="input" placeholder="할 일을 입력하세요" maxlength="200" autocomplete="off">
+      <button class="more-btn" type="button" id="detailBtn" aria-expanded="false">자세히 보기</button>
+      <div class="details" id="details" hidden>
       <input type="date" id="due" aria-label="마감일">
       <select id="cat" aria-label="카테고리"></select>
       <select id="prio" aria-label="우선순위">
@@ -137,6 +143,7 @@
         <option value="mid" selected>우선순위: 보통</option>
         <option value="low">우선순위: 낮음</option>
       </select>
+      </div>
       <button class="add" type="submit">추가</button>
     </form>
     <div class="filters" id="filters">
@@ -293,10 +300,16 @@
 
   function ymd(y, m, d) { return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
 
+  function setDetails(open) {
+    $('details').hidden = !open;
+    $('detailBtn').textContent = open ? '접기' : '자세히 보기';
+    $('detailBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
   function selectDate(key) {
     dateFilter = (dateFilter === key) ? '' : key;
     $('due').value = dateFilter;
-    if (dateFilter) $('missDate').value = dateFilter;
+    if (dateFilter) { $('missDate').value = dateFilter; setDetails(true); }
     renderTodos(); renderMissed();
   }
 
@@ -513,6 +526,8 @@
   };
 
   $('catFilter').onchange = function () { catFilter = $('catFilter').value; renderTodos(); };
+
+  $('detailBtn').onclick = function () { setDetails($('details').hidden); };
 
   $('prev').onclick = function () { viewM--; if (viewM < 0) { viewM = 11; viewY--; } renderGrid(); };
   $('next').onclick = function () { viewM++; if (viewM > 11) { viewM = 0; viewY++; } renderGrid(); };
