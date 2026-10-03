@@ -4,7 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>투두 리스트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
 <style>
+  /* 메모먼트 꾹꾹체: 같은 폴더에 fonts/MemomentKkukkukk.woff2 를 두거나 PC에 설치돼 있으면 적용됨 */
+  @font-face{
+    font-family:"MemomentKkukkukk";
+    src:local("Memoment Kkukkukk"), local("MemomentKkukkukk"), local("메모먼트 꾹꾹체"),
+        url("fonts/MemomentKkukkukk.woff2") format("woff2");
+    font-display:swap;
+  }
   :root{
     --bg:#ffe3ee; --card:#ffffff; --ink:#4a1f35; --muted:#9a6b82;
     --accent:#ff5c9d; --accent-d:#e0457f; --line:#f7d3e2; --soft:#fff3f8;
@@ -12,7 +22,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
-    font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    font-family:"MemomentKkukkukk","Gaegu",-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
     background:var(--bg); color:var(--ink); min-height:100vh;
     display:flex; justify-content:center; padding:20px 16px 40px;
     line-height:1.55; word-break:keep-all;
@@ -30,7 +40,8 @@
   input:focus, select:focus{outline:none; border-color:var(--accent)}
   input[type=text]{flex:1 1 100%; min-width:0}
   input[type=date], select{flex:1 1 0; min-width:0}
-  button{font-family:inherit; cursor:pointer}
+  button, input, select{font-family:inherit}
+  button{cursor:pointer}
   .add{flex:1 1 100%; padding:12px 18px; border:0; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:700}
   .add:hover{background:var(--accent-d)}
   .filters{display:flex; gap:6px; margin-bottom:12px}
