@@ -54,6 +54,7 @@
   .legend{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:12px; font-size:12px; color:var(--muted)}
   .legend span{display:inline-flex; align-items:center; gap:4px}
   #form{margin-bottom:8px}
+  #addBtn[hidden]{display:none}
   #addBtn{display:block; width:100%; margin-bottom:16px; padding:12px 18px}
   .more-btn{flex:1 1 100%; padding:6px 0; border:0; background:none; color:var(--muted); font-size:14px; font-weight:700; text-align:left}
   .more-btn:hover{color:var(--accent-d)}
@@ -135,9 +136,9 @@
     <h1>할 일 목록</h1>
     <p class="sub" id="count"></p>
     <form id="form">
-      <input type="text" id="input" placeholder="할 일을 입력하세요" maxlength="200" autocomplete="off">
       <button class="more-btn" type="button" id="detailBtn" aria-expanded="false">자세히 보기</button>
       <div class="details" id="details" hidden>
+      <input type="text" id="input" placeholder="할 일을 입력하세요" maxlength="200" autocomplete="off">
       <input type="date" id="due" aria-label="마감일">
       <select id="cat" aria-label="카테고리"></select>
       <select id="prio" aria-label="우선순위">
@@ -161,7 +162,7 @@
       </form>
     </div>
     </div>
-    <button class="add" id="addBtn" type="submit" form="form">추가</button>
+    <button class="add" id="addBtn" type="submit" form="form" hidden>추가</button>
     <div class="filters" id="filters">
       <button data-f="all" class="on">전체</button>
       <button data-f="active">진행중</button>
@@ -307,6 +308,8 @@
   function setDetails(open) {
     $('details').hidden = !open;
     $('catArea').hidden = !open;
+    $('addBtn').hidden = !open;
+    if (open && arguments[1]) $('input').focus();
     $('detailBtn').textContent = open ? '접기' : (catFilter !== 'all' ? '자세히 보기 (카테고리 필터 적용 중)' : '자세히 보기');
     $('detailBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
   }
@@ -532,7 +535,7 @@
 
   $('catFilter').onchange = function () { catFilter = $('catFilter').value; setDetails(true); renderTodos(); };
 
-  $('detailBtn').onclick = function () { setDetails($('details').hidden); };
+  $('detailBtn').onclick = function () { setDetails($('details').hidden, true); };
 
   $('prev').onclick = function () { viewM--; if (viewM < 0) { viewM = 11; viewY--; } renderGrid(); };
   $('next').onclick = function () { viewM++; if (viewM > 11) { viewM = 0; viewY++; } renderGrid(); };
