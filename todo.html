@@ -59,8 +59,17 @@
   li.done .text{color:var(--muted); text-decoration:line-through}
   .badge{display:inline-block; padding:1px 8px; border-radius:999px; color:#fff; font-size:11px; font-weight:700}
   .p-high{background:var(--high)} .p-mid{background:var(--mid)} .p-low{background:var(--low)}
-  .cat{display:inline-block; padding:1px 8px; border-radius:999px; border:1.5px solid var(--accent); color:var(--accent-d); font-size:11px; font-weight:700}
-  .catfilter{width:100%; margin-bottom:6px; padding:8px 12px; font-size:14px}
+  select.cat{padding:1px 6px; border-radius:999px; border:0; color:#fff; font-size:11px; font-weight:700; width:auto; flex:none; cursor:pointer}
+  .catbar{display:flex; gap:6px; margin-bottom:6px}
+  .catbar select{flex:1; min-width:0}
+  .catbar .redo{white-space:nowrap}
+  .catpanel{border:1.5px dashed var(--line); border-radius:12px; padding:10px; margin-bottom:10px}
+  .catpanel[hidden]{display:none}
+  .catrow{display:flex; gap:8px; align-items:center; margin-bottom:8px}
+  .catrow input[type=text]{flex:1 1 0; min-width:0; padding:8px 10px; font-size:15px}
+  .catrow input[type=color]{width:36px; height:36px; padding:0; border:1.5px solid var(--line); border-radius:50%; background:none; cursor:pointer}
+  .catrow .add{flex:0 0 auto; padding:8px 14px}
+  .catfilter{padding:8px 12px; font-size:14px}
   .overdue{color:var(--high); font-weight:700}
   .icon{border:0; background:none; color:var(--muted); font-size:20px; line-height:1; padding:4px 8px}
   .icon:hover{color:var(--accent-d)}
@@ -83,13 +92,7 @@
     <form id="form">
       <input type="text" id="input" placeholder="할 일을 입력하세요" maxlength="200" autocomplete="off">
       <input type="date" id="due" aria-label="마감일">
-      <select id="cat" aria-label="카테고리">
-        <option value="work">카테고리: 업무</option>
-        <option value="study">카테고리: 공부</option>
-        <option value="health">카테고리: 운동</option>
-        <option value="life" selected>카테고리: 생활</option>
-        <option value="etc">카테고리: 기타</option>
-      </select>
+      <select id="cat" aria-label="카테고리"></select>
       <select id="prio" aria-label="우선순위">
         <option value="high">우선순위: 높음</option>
         <option value="mid" selected>우선순위: 보통</option>
@@ -102,14 +105,18 @@
       <button data-f="active">진행중</button>
       <button data-f="done">완료</button>
     </div>
-    <select id="catFilter" aria-label="카테고리 필터" class="catfilter">
-      <option value="all">모든 카테고리</option>
-      <option value="work">업무</option>
-      <option value="study">공부</option>
-      <option value="health">운동</option>
-      <option value="life">생활</option>
-      <option value="etc">기타</option>
-    </select>
+    <div class="catbar">
+      <select id="catFilter" aria-label="카테고리 필터" class="catfilter"></select>
+      <button class="redo" type="button" id="catManage">카테고리 편집</button>
+    </div>
+    <div class="catpanel" id="catPanel" hidden>
+      <div id="catRows"></div>
+      <form class="catrow" id="catForm">
+        <input type="color" id="newCatColor" value="#ff5c9d" aria-label="색상">
+        <input type="text" id="newCatName" placeholder="새 카테고리 이름" maxlength="20" autocomplete="off">
+        <button class="add" type="submit">추가</button>
+      </form>
+    </div>
     <ul id="list"></ul>
     <button class="link" id="clear">완료한 항목 모두 삭제</button>
   </div>
@@ -129,9 +136,15 @@
 </div>
 <script>
   var KEY = 'todo-list-v2', OLD_KEY = 'todo-list-v1';
-  var state = { todos: [], missed: [] };
+  var DEFAULT_CATS = [
+    { id: 'work', name: '업무', color: '#ff5c9d' },
+    { id: 'study', name: '공부', color: '#a78bfa' },
+    { id: 'health', name: '운동', color: '#34c4a0' },
+    { id: 'life', name: '생활', color: '#f59e0b' },
+    { id: 'etc', name: '기타', color: '#94a3b8' }
+  ];
+  var state = { todos: [], missed: [], cats: DEFAULT_CATS };
   var filter = 'all';
-  var CATS = { work: '업무', study: '공부', health: '운동', life: '생활', etc: '기타' };
   var catFilter = 'all';
   var PRIO = { high: ['높음', 0], mid: ['보통', 1], low: ['낮음', 2] };
 
@@ -139,7 +152,7 @@
     var raw = localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY);
     var parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) state.todos = parsed;          // v1: 배열만 저장돼 있었음
-    else if (parsed) state = { todos: parsed.todos || [], missed: parsed.missed || [] };
+    else if (parsed) state = { todos: parsed.todos || [], missed: parsed.missed || [], cats: parsed.cats || DEFAULT_CATS };
   } catch (e) {}
 
   var $ = function (id) { return document.getElementById(id); };
@@ -164,6 +177,71 @@
     });
   }
 
+  function catById(id) {
+    for (var i = 0; i < state.cats.length; i++) if (state.cats[i].id === id) return state.cats[i];
+    return { id: '', name: '미분류', color: '#94a3b8' };
+  }
+
+  function fillSelect(sel, withAll, withNone, current) {
+    sel.innerHTML = '';
+    var add = function (v, label) {
+      var o = document.createElement('option');
+      o.value = v; o.textContent = label;
+      sel.appendChild(o);
+    };
+    if (withAll) add('all', '모든 카테고리');
+    state.cats.forEach(function (c) { add(c.id, c.name); });
+    if (withNone) add('', '미분류');
+    sel.value = current;
+    if (sel.value !== current) sel.selectedIndex = 0;
+  }
+
+  function renderCatControls() {
+    var cur = $('cat').value;
+    fillSelect($('cat'), false, true, cur || (state.cats[0] ? state.cats[0].id : ''));
+    if (catFilter !== 'all' && !state.cats.some(function (c) { return c.id === catFilter; })) catFilter = 'all';
+    fillSelect($('catFilter'), true, false, catFilter);
+
+    var rows = $('catRows');
+    rows.innerHTML = '';
+    state.cats.forEach(function (c) {
+      var row = document.createElement('div');
+      row.className = 'catrow';
+
+      var color = document.createElement('input');
+      color.type = 'color';
+      color.value = c.color;
+      color.setAttribute('aria-label', '색상');
+      color.onchange = function () { c.color = color.value; save(); renderCatControls(); renderTodos(); };
+
+      var name = document.createElement('input');
+      name.type = 'text';
+      name.value = c.name;
+      name.maxLength = 20;
+      name.setAttribute('aria-label', '카테고리 이름');
+      name.onchange = function () {
+        c.name = name.value.trim() || c.name;
+        save(); renderCatControls(); renderTodos();
+      };
+
+      var del = document.createElement('button');
+      del.className = 'icon';
+      del.type = 'button';
+      del.textContent = '×';
+      del.setAttribute('aria-label', '카테고리 삭제');
+      del.onclick = function () {
+        var used = state.todos.filter(function (t) { return t.cat === c.id; }).length;
+        if (used && !confirm('"' + c.name + '"을(를) 쓰는 할 일 ' + used + '개가 미분류로 바뀝니다. 삭제할까요?')) return;
+        state.todos.forEach(function (t) { if (t.cat === c.id) t.cat = ''; });
+        state.cats = state.cats.filter(function (x) { return x !== c; });
+        save(); renderCatControls(); renderTodos();
+      };
+
+      row.appendChild(color); row.appendChild(name); row.appendChild(del);
+      rows.appendChild(row);
+    });
+  }
+
   function renderTodos() {
     var todos = state.todos;
     var left = todos.filter(function (t) { return !t.done; }).length;
@@ -173,7 +251,7 @@
 
     var shown = sorted(todos).filter(function (t) {
       return (filter === 'all' || (filter === 'done') === t.done) &&
-             (catFilter === 'all' || (t.cat || 'etc') === catFilter);
+             (catFilter === 'all' || t.cat === catFilter);
     });
 
     var ul = $('list');
@@ -208,10 +286,12 @@
       badge.textContent = PRIO[p][0];
       meta.appendChild(badge);
 
-      var c = t.cat || 'etc';
-      var cat = document.createElement('span');
+      var cat = document.createElement('select');
       cat.className = 'cat';
-      cat.textContent = CATS[c];
+      cat.setAttribute('aria-label', '카테고리 변경');
+      fillSelect(cat, false, true, t.cat || '');
+      cat.style.background = catById(t.cat || '').color;
+      cat.onchange = function () { t.cat = cat.value; save(); renderTodos(); };
       meta.appendChild(cat);
 
       if (t.due) {
@@ -267,7 +347,7 @@
       redo.type = 'button';
       redo.textContent = '할 일로 추가';
       redo.onclick = function () {
-        state.todos.push({ id: uid(), text: m.text, done: false, prio: 'mid', cat: 'etc', due: '' });
+        state.todos.push({ id: uid(), text: m.text, done: false, prio: 'mid', cat: '', due: '' });
         save(); renderTodos();
       };
 
@@ -302,6 +382,16 @@
 
   $('catFilter').onchange = function () { catFilter = $('catFilter').value; renderTodos(); };
 
+  $('catManage').onclick = function () { $('catPanel').hidden = !$('catPanel').hidden; };
+  $('catForm').onsubmit = function (e) {
+    e.preventDefault();
+    var name = $('newCatName').value.trim();
+    if (!name) return;
+    state.cats.push({ id: uid(), name: name, color: $('newCatColor').value });
+    $('newCatName').value = '';
+    save(); renderCatControls();
+  };
+
   $('clear').onclick = function () {
     state.todos = state.todos.filter(function (t) { return !t.done; });
     save(); renderTodos();
@@ -321,6 +411,7 @@
     save(); renderMissed();
   };
 
+  renderCatControls();
   renderTodos();
   renderMissed();
 </script>
