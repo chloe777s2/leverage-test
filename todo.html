@@ -29,9 +29,31 @@
   }
   .wrap{width:100%; max-width:520px; display:flex; flex-direction:column; gap:16px}
   .card{background:var(--card); border-radius:20px; padding:28px 22px; box-shadow:0 10px 40px rgba(255,92,157,.25)}
-  .tabs{display:flex; gap:6px; margin-bottom:14px}
-  .tabs a{flex:1; text-align:center; padding:8px 0; border-radius:10px; border:1.5px solid var(--line); color:var(--muted); text-decoration:none; font-weight:700; font-size:14px}
-  .tabs a.on{background:var(--accent); border-color:var(--accent); color:#fff}
+  .head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  .head h1{margin:0; font-size:24px}
+  .nav{display:flex; gap:6px}
+  .nav button{border:1.5px solid var(--line); background:#fff; color:var(--muted); border-radius:10px; padding:4px 12px; font-size:16px; font-weight:700}
+  .nav button:hover{border-color:var(--accent); color:var(--accent-d)}
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
+  .dow{text-align:center; font-size:12px; font-weight:700; color:var(--muted); padding-bottom:2px}
+  .dow:first-child, .day.sun .num{color:var(--high)}
+  .day{
+    min-height:54px; border:1.5px solid var(--line); border-radius:10px; background:#fff;
+    padding:4px 3px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:3px;
+    color:var(--ink); font-size:14px;
+  }
+  .day.blank{border:0; background:none; cursor:default}
+  .day.today .num{background:var(--accent); color:#fff; border-radius:999px; padding:0 7px}
+  .day.sel{border-color:var(--accent); background:var(--soft); box-shadow:0 0 0 1.5px var(--accent)}
+  .dots{display:flex; flex-wrap:wrap; justify-content:center; gap:3px}
+  .dot{display:inline-block; width:8px; height:8px; border-radius:50%}
+  .dot.done{opacity:.3}
+  .dot.miss{background:none !important; border:1.5px solid var(--high)}
+  .more{font-size:10px; color:var(--muted)}
+  .legend{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:12px; font-size:12px; color:var(--muted)}
+  .legend span{display:inline-flex; align-items:center; gap:4px}
+  .datebar{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; padding:8px 12px; border-radius:10px; background:var(--soft); color:var(--accent-d); font-size:14px; font-weight:700}
+  .datebar[hidden]{display:none}
   h1{font-size:26px; margin-bottom:4px}
   h2{font-size:20px; margin-bottom:4px}
   .sub{color:var(--muted); font-size:14px; margin-bottom:18px}
@@ -90,7 +112,19 @@
 <body>
 <div class="wrap">
   <div class="card">
-    <nav class="tabs"><a class="on" href="todo.html">목록</a><a href="calendar.html">캘린더</a></nav>
+    <div class="head">
+      <h1 id="calTitle"></h1>
+      <div class="nav">
+        <button type="button" id="prev" aria-label="이전 달">‹</button>
+        <button type="button" id="todayBtn">오늘</button>
+        <button type="button" id="next" aria-label="다음 달">›</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="card">
     <h1>할 일 목록</h1>
     <p class="sub" id="count"></p>
     <form id="form">
@@ -121,6 +155,7 @@
         <button class="add" type="submit">추가</button>
       </form>
     </div>
+    <div class="datebar" id="dateBar" hidden><span id="dateBarText"></span><button class="redo" type="button" id="dateClear">전체 보기</button></div>
     <ul id="list"></ul>
     <button class="link" id="clear">완료한 항목 모두 삭제</button>
   </div>
@@ -150,6 +185,10 @@
   var state = { todos: [], missed: [], cats: DEFAULT_CATS };
   var filter = 'all';
   var catFilter = 'all';
+  var dateFilter = '';
+  var DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  var nowD = new Date();
+  var viewY = nowD.getFullYear(), viewM = nowD.getMonth();
   var PRIO = { high: ['높음', 0], mid: ['보통', 1], low: ['낮음', 2] };
 
   try {
@@ -246,6 +285,80 @@
     });
   }
 
+  function ymd(y, m, d) { return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
+
+  function selectDate(key) {
+    dateFilter = (dateFilter === key) ? '' : key;
+    $('due').value = dateFilter;
+    if (dateFilter) $('missDate').value = dateFilter;
+    renderTodos(); renderMissed();
+  }
+
+  function renderGrid() {
+    $('calTitle').textContent = viewY + '년 ' + (viewM + 1) + '월';
+    var grid = $('grid');
+    grid.innerHTML = '';
+    DOW.forEach(function (d) {
+      var el = document.createElement('div');
+      el.className = 'dow'; el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    var first = new Date(viewY, viewM, 1).getDay();
+    var days = new Date(viewY, viewM + 1, 0).getDate();
+    for (var i = 0; i < first; i++) {
+      var b = document.createElement('div'); b.className = 'day blank'; grid.appendChild(b);
+    }
+    for (var d = 1; d <= days; d++) {
+      (function (d) {
+        var key = ymd(viewY, viewM, d);
+        var cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'day' + ((first + d - 1) % 7 === 0 ? ' sun' : '') +
+          (key === today() ? ' today' : '') + (key === dateFilter ? ' sel' : '');
+        cell.setAttribute('aria-label', key);
+
+        var num = document.createElement('span');
+        num.className = 'num'; num.textContent = d;
+        cell.appendChild(num);
+
+        var all = state.todos.filter(function (t) { return t.due === key; })
+          .map(function (t) { return { color: catById(t.cat || '').color, done: t.done }; })
+          .concat(state.missed.filter(function (m) { return m.date === key; })
+            .map(function () { return { miss: true }; }));
+        var dots = document.createElement('div');
+        dots.className = 'dots';
+        all.slice(0, 4).forEach(function (x) {
+          var dot = document.createElement('span');
+          dot.className = 'dot' + (x.done ? ' done' : '') + (x.miss ? ' miss' : '');
+          if (!x.miss) dot.style.background = x.color;
+          dots.appendChild(dot);
+        });
+        cell.appendChild(dots);
+        if (all.length > 4) {
+          var more = document.createElement('span');
+          more.className = 'more'; more.textContent = '+' + (all.length - 4);
+          cell.appendChild(more);
+        }
+        cell.onclick = function () { selectDate(key); };
+        grid.appendChild(cell);
+      })(d);
+    }
+
+    var lg = $('legend');
+    lg.innerHTML = '';
+    var item = function (color, miss, label) {
+      var sp = document.createElement('span');
+      var dot = document.createElement('i');
+      dot.className = 'dot' + (miss ? ' miss' : '');
+      if (color) dot.style.background = color;
+      sp.appendChild(dot); sp.appendChild(document.createTextNode(label));
+      lg.appendChild(sp);
+    };
+    state.cats.forEach(function (c) { item(c.color, false, c.name); });
+    item('', true, '못한 일');
+  }
+
   function renderTodos() {
     var todos = state.todos;
     var left = todos.filter(function (t) { return !t.done; }).length;
@@ -255,7 +368,8 @@
 
     var shown = sorted(todos).filter(function (t) {
       return (filter === 'all' || (filter === 'done') === t.done) &&
-             (catFilter === 'all' || t.cat === catFilter);
+             (catFilter === 'all' || t.cat === catFilter) &&
+             (!dateFilter || t.due === dateFilter);
     });
 
     var ul = $('list');
@@ -324,6 +438,13 @@
     Array.prototype.forEach.call($('filters').children, function (b) {
       b.className = b.dataset.f === filter ? 'on' : '';
     });
+
+    $('dateBar').hidden = !dateFilter;
+    if (dateFilter) {
+      var q = dateFilter.split('-');
+      $('dateBarText').textContent = (+q[1]) + '월 ' + (+q[2]) + '일 마감만 보는 중';
+    }
+    renderGrid();
   }
 
   function renderMissed() {
@@ -368,6 +489,7 @@
       li.appendChild(body); li.appendChild(redo); li.appendChild(del);
       ul.appendChild(li);
     });
+    renderGrid();
   }
 
   $('form').onsubmit = function (e) {
@@ -376,7 +498,7 @@
     if (!text) return;
     state.todos.push({ id: uid(), text: text, done: false, prio: $('prio').value, cat: $('cat').value, due: $('due').value });
     $('input').value = '';
-    $('due').value = '';
+    $('due').value = dateFilter;
     save(); renderTodos();
   };
 
@@ -385,6 +507,13 @@
   };
 
   $('catFilter').onchange = function () { catFilter = $('catFilter').value; renderTodos(); };
+
+  $('prev').onclick = function () { viewM--; if (viewM < 0) { viewM = 11; viewY--; } renderGrid(); };
+  $('next').onclick = function () { viewM++; if (viewM > 11) { viewM = 0; viewY++; } renderGrid(); };
+  $('todayBtn').onclick = function () {
+    var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth(); renderGrid();
+  };
+  $('dateClear').onclick = function () { dateFilter = ''; $('due').value = ''; renderTodos(); };
 
   $('catManage').onclick = function () { $('catPanel').hidden = !$('catPanel').hidden; };
   $('catForm').onsubmit = function (e) {
