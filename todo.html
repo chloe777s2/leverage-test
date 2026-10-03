@@ -274,7 +274,12 @@
       del.setAttribute('aria-label', '카테고리 삭제');
       del.onclick = function () {
         var used = state.todos.filter(function (t) { return t.cat === c.id; }).length;
-        if (used && !confirm('"' + c.name + '"을(를) 쓰는 할 일 ' + used + '개가 미분류로 바뀝니다. 삭제할까요?')) return;
+        if (used && del.dataset.armed !== '1') {      // 확인창 대신 버튼을 한 번 더 누르게 함
+          del.dataset.armed = '1';
+          del.textContent = used + '개 미분류로 바뀜. 한 번 더 누르면 삭제';
+          del.style.fontSize = '12px';
+          return;
+        }
         state.todos.forEach(function (t) { if (t.cat === c.id) t.cat = ''; });
         state.cats = state.cats.filter(function (x) { return x !== c; });
         save(); renderCatControls(); renderTodos();
