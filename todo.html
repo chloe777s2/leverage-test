@@ -56,7 +56,7 @@
   .more-btn{flex:1 1 100%; padding:6px 0; border:0; background:none; color:var(--muted); font-size:14px; font-weight:700; text-align:left}
   .more-btn:hover{color:var(--accent-d)}
   .details{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:8px}
-  .details[hidden]{display:none}
+  .details[hidden], #catArea[hidden]{display:none}
   .datebar{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; padding:8px 12px; border-radius:10px; background:var(--soft); color:var(--accent-d); font-size:14px; font-weight:700}
   .datebar[hidden]{display:none}
   h1{font-size:26px; margin-bottom:4px}
@@ -151,6 +151,7 @@
       <button data-f="active">진행중</button>
       <button data-f="done">완료</button>
     </div>
+    <div id="catArea" hidden>
     <div class="catbar">
       <select id="catFilter" aria-label="카테고리 필터" class="catfilter"></select>
       <button class="redo" type="button" id="catManage">카테고리 편집</button>
@@ -162,6 +163,7 @@
         <input type="text" id="newCatName" placeholder="새 카테고리 이름" maxlength="20" autocomplete="off">
         <button class="add" type="submit">추가</button>
       </form>
+    </div>
     </div>
     <div class="datebar" id="dateBar" hidden><span id="dateBarText"></span><button class="redo" type="button" id="dateClear">전체 보기</button></div>
     <ul id="list"></ul>
@@ -302,7 +304,8 @@
 
   function setDetails(open) {
     $('details').hidden = !open;
-    $('detailBtn').textContent = open ? '접기' : '자세히 보기';
+    $('catArea').hidden = !open;
+    $('detailBtn').textContent = open ? '접기' : (catFilter !== 'all' ? '자세히 보기 (카테고리 필터 적용 중)' : '자세히 보기');
     $('detailBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 
@@ -525,7 +528,7 @@
     if (e.target.dataset.f) { filter = e.target.dataset.f; renderTodos(); }
   };
 
-  $('catFilter').onchange = function () { catFilter = $('catFilter').value; renderTodos(); };
+  $('catFilter').onchange = function () { catFilter = $('catFilter').value; setDetails(true); renderTodos(); };
 
   $('detailBtn').onclick = function () { setDetails($('details').hidden); };
 
