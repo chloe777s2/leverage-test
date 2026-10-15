@@ -68,7 +68,7 @@
   .more-btn{flex:1 1 100%; padding:6px 0; border:0; background:none; color:var(--muted); font-size:14px; font-weight:700; text-align:left}
   .more-btn:hover{color:var(--accent-d)}
   .details{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:8px}
-  .details[hidden], #catArea[hidden]{display:none}
+  .details[hidden]{display:none}
   .quote{background:var(--soft); text-align:center; padding:20px 22px}
   .qlabel{font-size:12px; font-weight:700; color:var(--accent-d); letter-spacing:.04em; margin-bottom:6px}
   .qtext{font-size:19px; line-height:1.5; text-wrap:balance}
@@ -106,17 +106,8 @@
   li.done .text{color:var(--muted); text-decoration:line-through}
   .badge{display:inline-block; padding:1px 8px; border-radius:999px; color:#fff; font-size:11px; font-weight:700}
   .p-high{background:var(--high)} .p-mid{background:var(--mid)} .p-low{background:var(--low)}
+  select.badge{padding:1px 6px; border:0; width:auto; flex:none; cursor:pointer}
   select.cat{padding:1px 6px; border-radius:999px; border:0; color:#fff; font-size:11px; font-weight:700; width:auto; flex:none; cursor:pointer}
-  .catbar{display:flex; gap:6px; margin-bottom:10px}
-  .catbar select{flex:1; min-width:0}
-  .catbar .redo{white-space:nowrap}
-  .catpanel{border:1.5px dashed var(--line); border-radius:12px; padding:10px; margin-bottom:10px}
-  .catpanel[hidden]{display:none}
-  .catrow{display:flex; gap:8px; align-items:center; margin-bottom:8px}
-  .catrow input[type=text]{flex:1 1 0; min-width:0; padding:8px 10px; font-size:15px}
-  .catrow input[type=color]{width:36px; height:36px; padding:0; border:1.5px solid var(--line); border-radius:50%; background:none; cursor:pointer}
-  .catrow .add{flex:0 0 auto; padding:8px 14px}
-  .catfilter{padding:8px 12px; font-size:14px}
   .overdue{color:var(--high); font-weight:700}
   .icon{border:0; background:none; color:var(--muted); font-size:20px; line-height:1; padding:4px 8px}
   .icon:hover{color:var(--accent-d)}
@@ -173,20 +164,6 @@
       </select>
       </div>
     </form>
-    <div id="catArea" hidden>
-    <div class="catbar">
-      <select id="catFilter" aria-label="카테고리 필터" class="catfilter"></select>
-      <button class="redo" type="button" id="catManage">카테고리 편집</button>
-    </div>
-    <div class="catpanel" id="catPanel" hidden>
-      <div id="catRows"></div>
-      <form class="catrow" id="catForm">
-        <input type="color" id="newCatColor" value="#ff5c9d" aria-label="색상">
-        <input type="text" id="newCatName" placeholder="새 카테고리 이름" maxlength="20" autocomplete="off">
-        <button class="add" type="submit">추가</button>
-      </form>
-    </div>
-    </div>
     <button class="add" id="addBtn" type="submit" form="form" hidden>추가</button>
     <div class="filters" id="filters">
       <button data-f="all" class="on">전체</button>
@@ -223,7 +200,6 @@
   ];
   var state = { todos: [], missed: [], cats: DEFAULT_CATS };
   var filter = 'all';
-  var catFilter = 'all';
   var dateFilter = '';
   var DOW = ['일', '월', '화', '수', '목', '금', '토'];
   var nowD = new Date();
@@ -281,52 +257,6 @@
   function renderCatControls() {
     var cur = $('cat').value;
     fillSelect($('cat'), false, true, cur || (state.cats[0] ? state.cats[0].id : ''));
-    if (catFilter !== 'all' && !state.cats.some(function (c) { return c.id === catFilter; })) catFilter = 'all';
-    fillSelect($('catFilter'), true, false, catFilter);
-
-    var rows = $('catRows');
-    rows.innerHTML = '';
-    state.cats.forEach(function (c) {
-      var row = document.createElement('div');
-      row.className = 'catrow';
-
-      var color = document.createElement('input');
-      color.type = 'color';
-      color.value = c.color;
-      color.setAttribute('aria-label', '색상');
-      color.onchange = function () { c.color = color.value; save(); renderCatControls(); renderTodos(); };
-
-      var name = document.createElement('input');
-      name.type = 'text';
-      name.value = c.name;
-      name.maxLength = 20;
-      name.setAttribute('aria-label', '카테고리 이름');
-      name.onchange = function () {
-        c.name = name.value.trim() || c.name;
-        save(); renderCatControls(); renderTodos();
-      };
-
-      var del = document.createElement('button');
-      del.className = 'icon';
-      del.type = 'button';
-      del.textContent = '×';
-      del.setAttribute('aria-label', '카테고리 삭제');
-      del.onclick = function () {
-        var used = state.todos.filter(function (t) { return t.cat === c.id; }).length;
-        if (used && del.dataset.armed !== '1') {      // 확인창 대신 버튼을 한 번 더 누르게 함
-          del.dataset.armed = '1';
-          del.textContent = used + '개 미분류로 바뀜. 한 번 더 누르면 삭제';
-          del.style.fontSize = '12px';
-          return;
-        }
-        state.todos.forEach(function (t) { if (t.cat === c.id) t.cat = ''; });
-        state.cats = state.cats.filter(function (x) { return x !== c; });
-        save(); renderCatControls(); renderTodos();
-      };
-
-      row.appendChild(color); row.appendChild(name); row.appendChild(del);
-      rows.appendChild(row);
-    });
   }
 
   function ymd(y, m, d) { return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
@@ -386,10 +316,9 @@
 
   function setDetails(open) {
     $('details').hidden = !open;
-    $('catArea').hidden = !open;
     $('addBtn').hidden = !open;
     if (open && arguments[1]) $('input').focus();
-    $('detailBtn').textContent = open ? '접기' : (catFilter !== 'all' ? '자세히 보기 (카테고리 필터 적용 중)' : '자세히 보기');
+    $('detailBtn').textContent = open ? '접기' : '자세히 보기';
     $('detailBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 
@@ -476,7 +405,6 @@
 
     var shown = sorted(todos).filter(function (t) {
       return (filter === 'all' || (filter === 'done') === t.done) &&
-             (catFilter === 'all' || t.cat === catFilter) &&
              (!dateFilter || t.due === dateFilter);
     });
 
@@ -507,9 +435,16 @@
       meta.className = 'meta';
 
       var p = t.prio || 'mid';
-      var badge = document.createElement('span');
+      var badge = document.createElement('select');
       badge.className = 'badge p-' + p;
-      badge.textContent = PRIO[p][0];
+      badge.setAttribute('aria-label', '우선순위 변경');
+      Object.keys(PRIO).forEach(function (k) {
+        var o = document.createElement('option');
+        o.value = k; o.textContent = PRIO[k][0];
+        badge.appendChild(o);
+      });
+      badge.value = p;
+      badge.onchange = function () { t.prio = badge.value; save(); renderTodos(); };
       meta.appendChild(badge);
 
       var cat = document.createElement('select');
@@ -650,8 +585,6 @@
     if (e.target.dataset.f) { filter = e.target.dataset.f; renderTodos(); }
   };
 
-  $('catFilter').onchange = function () { catFilter = $('catFilter').value; setDetails(true); renderTodos(); };
-
   $('detailBtn').onclick = function () { setDetails($('details').hidden, true); };
 
   $('prev').onclick = function () { viewM--; if (viewM < 0) { viewM = 11; viewY--; } renderGrid(); };
@@ -660,16 +593,6 @@
     var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth(); renderGrid();
   };
   $('dateClear').onclick = function () { dateFilter = ''; $('due').value = ''; renderTodos(); };
-
-  $('catManage').onclick = function () { $('catPanel').hidden = !$('catPanel').hidden; };
-  $('catForm').onsubmit = function (e) {
-    e.preventDefault();
-    var name = $('newCatName').value.trim();
-    if (!name) return;
-    state.cats.push({ id: uid(), name: name, color: $('newCatColor').value });
-    $('newCatName').value = '';
-    save(); renderCatControls();
-  };
 
   $('clear').onclick = function () {
     state.todos = state.todos.filter(function (t) { return !t.done; });
