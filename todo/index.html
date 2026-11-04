@@ -73,6 +73,8 @@
   .qtext{font-size:19px; line-height:1.5; text-wrap:balance}
   .qby{margin-top:6px; font-size:13px; color:var(--muted)}
   .qby:empty{display:none}
+  .qhint{margin-top:8px; font-size:11px; color:var(--muted); opacity:.7}
+  .quote{cursor:pointer}
   .datebar{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; padding:8px 12px; border-radius:10px; background:var(--soft); color:var(--accent-d); font-size:14px; font-weight:700}
   .datebar[hidden]{display:none}
   h1{font-size:26px; margin-bottom:4px}
@@ -132,10 +134,11 @@
     <div class="legend" id="legend"></div>
   </div>
 
-  <div class="card quote">
+  <div class="card quote" id="quoteCard" role="button" tabindex="0" aria-label="다른 명언 보기">
     <p class="qlabel" id="qLabel"></p>
     <p class="qtext" id="qText"></p>
     <p class="qby" id="qBy"></p>
+    <p class="qhint">눌러서 다른 명언 보기</p>
   </div>
 
   <div class="card">
@@ -176,7 +179,7 @@
   ];
   var state = { todos: [], missed: [], cats: DEFAULT_CATS };
   var filter = 'all';
-  var dateFilter = '';
+  var dateFilter = today();                      // 처음 열면 오늘 할 일만 보임
   var DOW = ['일', '월', '화', '수', '목', '금', '토'];
   var nowD = new Date();
   var viewY = nowD.getFullYear(), viewM = nowD.getMonth();
@@ -274,13 +277,16 @@
   ];
 
   // 앱을 열 때마다 무작위로 하나 고르고, 직전에 본 것은 피함
+  function pickQuote(avoid) {
+    var n = Math.floor(Math.random() * QUOTES.length);
+    if (n === avoid) n = (n + 1) % QUOTES.length;
+    try { localStorage.setItem('todo-last-quote', String(n)); } catch (e) {}
+    return n;
+  }
   var quoteIdx = (function () {
     var last = -1;
     try { last = parseInt(localStorage.getItem('todo-last-quote'), 10); } catch (e) {}
-    var n = Math.floor(Math.random() * QUOTES.length);
-    if (n === last) n = (n + 1) % QUOTES.length;
-    try { localStorage.setItem('todo-last-quote', String(n)); } catch (e) {}
-    return n;
+    return pickQuote(last);
   })();
 
   function renderQuote() {
@@ -491,6 +497,22 @@
     save(); renderTodos();
   };
 
+  function newQuote() { quoteIdx = pickQuote(quoteIdx); renderQuote(); }
+  $('quoteCard').onclick = newQuote;
+  $('quoteCard').onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); newQuote(); } };
+
+  // 앱을 켜 둔 채 날짜가 바뀌면 새 날짜와 새 명언으로 갱신
+  var lastDay = today();
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden || lastDay === today()) return;
+    lastDay = today();
+    var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth();
+    dateFilter = lastDay; $('due').value = dateFilter;
+    quoteIdx = pickQuote(quoteIdx);
+    renderTodos();
+  });
+
+  $('due').value = dateFilter;
   renderCatControls();
   renderTodos();
 </script>
