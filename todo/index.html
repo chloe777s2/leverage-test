@@ -58,7 +58,6 @@
   .dots{display:flex; flex-wrap:wrap; justify-content:center; gap:3px}
   .dot{display:inline-block; width:8px; height:8px; border-radius:50%}
   .dot.done{opacity:.3}
-  .dot.miss{background:none !important; border:1.5px solid var(--high)}
   .more{font-size:10px; color:var(--muted)}
   .legend{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:12px; font-size:12px; color:var(--muted)}
   .legend span{display:inline-flex; align-items:center; gap:4px}
@@ -113,16 +112,7 @@
   .icon:hover{color:var(--accent-d)}
   .empty{text-align:center; color:var(--muted); padding:28px 0; font-size:15px}
   .link{margin-top:14px; border:0; background:none; color:var(--muted); font-size:13px; text-decoration:underline}
-  .daterow{display:flex; gap:8px; margin-bottom:12px}
-  .daterow input{flex:1}
-  .miss form{margin-bottom:8px}
-  .miss input[type=text]{flex:1 1 0}
-  .miss .add{flex:0 0 auto}
   .redo{font-size:12px; border:1.5px solid var(--line); background:#fff; color:var(--muted); border-radius:8px; padding:3px 8px}
-  .resched{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:6px}
-  .resched input[type=date]{flex:0 1 150px; padding:6px 8px; font-size:14px}
-  .resched .redo.go{background:var(--accent); border-color:var(--accent); color:#fff}
-  #missMsg{margin:8px 0 0; min-height:1.5em}
   .redo:hover{border-color:var(--accent); color:var(--accent-d)}
 </style>
 </head>
@@ -173,20 +163,6 @@
     <div class="datebar" id="dateBar" hidden><span id="dateBarText"></span><button class="redo" type="button" id="dateClear">전체 보기</button></div>
     <ul id="list"></ul>
     <button class="link" id="clear">완료한 항목 모두 삭제</button>
-  </div>
-
-  <div class="card miss">
-    <h2>😢 그날 못한 일</h2>
-    <p class="sub">날짜를 고르고, 그날 끝내지 못한 일을 적어두세요.</p>
-    <div class="daterow">
-      <input type="date" id="missDate" aria-label="날짜">
-    </div>
-    <form id="missForm">
-      <input type="text" id="missInput" placeholder="못한 일과 이유를 적어보세요" maxlength="200" autocomplete="off">
-      <button class="add" type="submit">기록</button>
-    </form>
-    <ul id="missList"></ul>
-    <p class="sub" id="missMsg" aria-live="polite"></p>
   </div>
 </div>
 <script>
@@ -325,9 +301,8 @@
   function selectDate(key) {
     dateFilter = (dateFilter === key) ? '' : key;
     $('due').value = dateFilter;
-    if (dateFilter) { $('missDate').value = dateFilter; setDetails(true); }
-    $('missMsg').textContent = '';
-    renderTodos(); renderMissed();
+    if (dateFilter) setDetails(true);
+    renderTodos();
   }
 
   function renderGrid() {
@@ -359,15 +334,13 @@
         cell.appendChild(num);
 
         var all = state.todos.filter(function (t) { return t.due === key; })
-          .map(function (t) { return { color: catById(t.cat || '').color, done: t.done }; })
-          .concat(state.missed.filter(function (m) { return m.date === key; })
-            .map(function (m) { return { miss: true, done: m.done }; }));
+          .map(function (t) { return { color: catById(t.cat || '').color, done: t.done }; });
         var dots = document.createElement('div');
         dots.className = 'dots';
         all.slice(0, 4).forEach(function (x) {
           var dot = document.createElement('span');
-          dot.className = 'dot' + (x.done ? ' done' : '') + (x.miss ? ' miss' : '');
-          if (!x.miss) dot.style.background = x.color;
+          dot.className = 'dot' + (x.done ? ' done' : '');
+          dot.style.background = x.color;
           dots.appendChild(dot);
         });
         cell.appendChild(dots);
@@ -383,16 +356,15 @@
 
     var lg = $('legend');
     lg.innerHTML = '';
-    var item = function (color, miss, label) {
+    var item = function (color, label) {
       var sp = document.createElement('span');
       var dot = document.createElement('i');
-      dot.className = 'dot' + (miss ? ' miss' : '');
-      if (color) dot.style.background = color;
+      dot.className = 'dot';
+      dot.style.background = color;
       sp.appendChild(dot); sp.appendChild(document.createTextNode(label));
       lg.appendChild(sp);
     };
-    state.cats.forEach(function (c) { item(c.color, false, c.name); });
-    item('', true, '못한 일');
+    state.cats.forEach(function (c) { item(c.color, c.name); });
   }
 
   function renderTodos() {
@@ -491,86 +463,6 @@
     renderQuote();
   }
 
-  function renderMissed() {
-    var date = $('missDate').value;
-    var items = state.missed.filter(function (m) { return m.date === date; });
-    var ul = $('missList');
-    ul.innerHTML = '';
-    if (!items.length) {
-      var empty = document.createElement('div');
-      empty.className = 'empty';
-      empty.textContent = '이 날 기록된 못한 일이 없어요';
-      ul.appendChild(empty);
-    }
-    items.forEach(function (m) {
-      var li = document.createElement('li');
-      if (m.done) li.className = 'done';
-
-      var cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.checked = !!m.done;
-      cb.setAttribute('aria-label', '완료 표시');
-      cb.onchange = function () { m.done = cb.checked; save(); renderMissed(); };
-
-      var body = document.createElement('div');
-      body.className = 'body';
-      var text = document.createElement('div');
-      text.className = 'text';
-      text.textContent = m.text;
-      body.appendChild(text);
-
-      var actions = document.createElement('div');
-      actions.className = 'resched';
-      var redo = document.createElement('button');
-      redo.className = 'redo';
-      redo.type = 'button';
-      redo.textContent = '날짜 다시 정하기';
-      actions.appendChild(redo);
-      body.appendChild(actions);
-
-      redo.onclick = function () {
-        redo.hidden = true;
-        var d = document.createElement('input');
-        d.type = 'date';
-        d.value = today();
-        d.setAttribute('aria-label', '새 날짜');
-        var ok = document.createElement('button');
-        ok.className = 'redo go';
-        ok.type = 'button';
-        ok.textContent = '확인';
-        var cancel = document.createElement('button');
-        cancel.className = 'redo';
-        cancel.type = 'button';
-        cancel.textContent = '취소';
-        cancel.onclick = function () { renderMissed(); };
-        ok.onclick = function () {
-          if (!d.value) return;
-          state.todos.push({ id: uid(), text: m.text, done: false, prio: 'mid', cat: '', due: d.value });
-          state.missed = state.missed.filter(function (x) { return x !== m; });
-          var q = d.value.split('-');
-          save(); renderTodos(); renderMissed();
-          $('missMsg').textContent = '\u201c' + m.text + '\u201d을(를) ' + (+q[1]) + '월 ' + (+q[2]) + '일 할 일로 옮겼어요.';
-        };
-        actions.appendChild(d); actions.appendChild(ok); actions.appendChild(cancel);
-        d.focus();
-      };
-
-      var del = document.createElement('button');
-      del.className = 'icon';
-      del.type = 'button';
-      del.textContent = '×';
-      del.setAttribute('aria-label', '삭제');
-      del.onclick = function () {
-        state.missed = state.missed.filter(function (x) { return x !== m; });
-        save(); renderMissed();
-      };
-
-      li.appendChild(cb); li.appendChild(body); li.appendChild(del);
-      ul.appendChild(li);
-    });
-    renderGrid();
-  }
-
   $('form').onsubmit = function (e) {
     e.preventDefault();
     var text = $('input').value.trim();
@@ -599,27 +491,8 @@
     save(); renderTodos();
   };
 
-  $('missDate').value = today();
-  $('missDate').onchange = function () {
-    if (!$('missDate').value) $('missDate').value = today();
-    dateFilter = $('missDate').value;          // 못한 일 날짜를 바꾸면 선택한 날짜도 같이 바뀜
-    $('due').value = dateFilter;
-    var q = dateFilter.split('-');
-    viewY = +q[0]; viewM = +q[1] - 1;
-    renderTodos(); renderMissed();
-  };
-  $('missForm').onsubmit = function (e) {
-    e.preventDefault();
-    var text = $('missInput').value.trim();
-    if (!text) return;
-    state.missed.push({ id: uid(), date: $('missDate').value, text: text });
-    $('missInput').value = '';
-    save(); renderMissed();
-  };
-
   renderCatControls();
   renderTodos();
-  renderMissed();
 </script>
 </body>
 </html>
