@@ -16,160 +16,328 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  /* 메모먼트 꾹꾹체: 같은 폴더에 fonts/MemomentKkukkukk.woff2 를 두거나 PC에 설치돼 있으면 적용됨 */
   @font-face{
     font-family:"MemomentKkukkukk";
     src:local("Memoment Kkukkukk"), local("MemomentKkukkukk"), local("메모먼트 꾹꾹체"),
         url("fonts/MemomentKkukkukk.woff2") format("woff2");
     font-display:swap;
   }
+  /* 레이아웃: PC 전체 화면 = 왼쪽 큰 월간 캘린더 + 오른쪽 선택한 날의 할 일 패널, 리포트는 별도 탭 */
   :root{
     --bg:#ffe3ee; --card:#ffffff; --ink:#4a1f35; --muted:#9a6b82;
     --accent:#ff5c9d; --accent-d:#e0457f; --line:#f7d3e2; --soft:#fff3f8;
-    --high:#e5383b; --mid:#ff8fb8; --low:#b79cff;
+    --high:#e5383b; --mid:#ff8fb8; --low:#b79cff; --good:#1f9d6b; --warn:#d97706;
+    --font:"MemomentKkukkukk","Gaegu",-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    font-family:"MemomentKkukkukk","Gaegu",-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-    background:var(--bg); color:var(--ink); min-height:100vh;
-    display:flex; justify-content:center; padding:20px 16px 40px;
-    line-height:1.55; word-break:keep-all;
-  }
-  .wrap{width:100%; max-width:520px; display:flex; flex-direction:column; gap:16px}
-  .card{background:var(--card); border-radius:20px; padding:28px 22px; box-shadow:0 10px 40px rgba(255,92,157,.25)}
-  .pagetitle{text-align:center; font-size:28px; color:var(--ink); margin:4px 0 0}
-  .head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
-  .head h1{margin:0; font-size:24px}
-  .nav{display:flex; gap:6px}
-  .nav button{border:1.5px solid var(--line); background:#fff; color:var(--muted); border-radius:10px; padding:4px 12px; font-size:16px; font-weight:700}
-  .nav button{display:inline-flex; align-items:center; justify-content:center}
-  .nav button:hover{border-color:var(--accent); color:var(--accent-d)}
-  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
-  .dow{text-align:center; font-size:12px; font-weight:700; color:var(--muted); padding-bottom:2px}
-  .dow:first-child, .day.sun .num{color:var(--high)}
-  .day{
-    min-height:54px; border:1.5px solid var(--line); border-radius:10px; background:#fff;
-    padding:4px 3px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:3px;
-    color:var(--ink); font-size:14px;
-  }
-  .day.blank{border:0; background:none; cursor:default}
-  .day.today .num{background:var(--accent); color:#fff; border-radius:999px; padding:0 7px}
-  .day.sel{border-color:var(--accent); background:var(--soft); box-shadow:0 0 0 1.5px var(--accent)}
-  .dots{display:flex; flex-wrap:wrap; justify-content:center; gap:3px}
-  .dot{display:inline-block; width:8px; height:8px; border-radius:50%}
-  .dot.done{opacity:.3}
-  .more{font-size:10px; color:var(--muted)}
-  .legend{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:12px; font-size:12px; color:var(--muted)}
-  .legend span{display:inline-flex; align-items:center; gap:4px}
-  #form{margin-bottom:8px}
-  #addBtn[hidden]{display:none}
-  #addBtn{display:block; width:100%; margin-bottom:16px; padding:12px 18px}
-  .more-btn{flex:1 1 100%; padding:6px 0; border:0; background:none; color:var(--muted); font-size:14px; font-weight:700; text-align:left}
-  .more-btn:hover{color:var(--accent-d)}
-  .details{flex:1 1 100%; display:flex; flex-wrap:wrap; gap:8px}
-  .details[hidden]{display:none}
-  .quote{background:var(--soft); text-align:center; padding:20px 22px}
-  .qlabel{font-size:12px; font-weight:700; color:var(--accent-d); letter-spacing:.04em; margin-bottom:6px}
-  .qtext{font-size:19px; line-height:1.5; text-wrap:balance}
-  .qby{margin-top:6px; font-size:13px; color:var(--muted)}
-  .qby:empty{display:none}
-  .qhint{margin-top:8px; font-size:11px; color:var(--muted); opacity:.7}
-  .quote{cursor:pointer}
-  .datebar{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; padding:8px 12px; border-radius:10px; background:var(--soft); color:var(--accent-d); font-size:14px; font-weight:700}
-  .datebar[hidden]{display:none}
-  h1{font-size:26px; margin-bottom:4px}
-  h2{font-size:20px; margin-bottom:4px}
-  .sub{color:var(--muted); font-size:14px; margin-bottom:18px}
-  form{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px}
-  input[type=text], input[type=date], select{
-    padding:12px 14px; font-size:16px; font-family:inherit;
-    border:1.5px solid var(--line); border-radius:12px; background:var(--soft); color:var(--ink);
-  }
-  input:focus, select:focus{outline:none; border-color:var(--accent)}
-  input[type=text]{flex:1 1 100%; min-width:0}
-  input[type=date], select{flex:1 1 0; min-width:0}
-  button, input, select{font-family:inherit}
+  html,body{height:100%}
+  body{font-family:var(--font); background:var(--bg); color:var(--ink); line-height:1.5; word-break:keep-all}
+  button, input, select{font-family:inherit; color:inherit}
   button{cursor:pointer}
-  .add{flex:1 1 100%; padding:12px 18px; border:0; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:700}
-  .add:hover{background:var(--accent-d)}
-  .filters{display:flex; gap:6px; margin-bottom:12px}
-  .filters button{
-    flex:1; padding:8px 0; border:1.5px solid var(--line); border-radius:10px;
-    background:#fff; color:var(--muted); font-size:14px; font-weight:600;
-  }
-  .filters button.on{background:var(--ink); border-color:var(--ink); color:#fff}
+  :focus-visible{outline:2px solid var(--accent-d); outline-offset:2px}
+
+  .app{max-width:1600px; margin:0 auto; padding:16px 16px 32px; display:flex; flex-direction:column; gap:14px; min-height:100%}
+
+  /* 헤더 */
+  .top{display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px}
+  .brand{font-size:26px; white-space:nowrap}
+  .quote{flex:1 1 320px; min-width:0; background:var(--soft); border:1.5px solid var(--line); border-radius:14px; padding:6px 14px; cursor:pointer; text-align:left}
+  .quote .q{font-size:15px}
+  .quote .by{font-size:12px; color:var(--muted)}
+  .tabs{display:flex; gap:6px}
+  .tab{border:1.5px solid var(--line); background:#fff; color:var(--muted); border-radius:10px; padding:7px 16px; font-size:15px; font-weight:700}
+  .tab.on{background:var(--ink); border-color:var(--ink); color:#fff}
+  .iconbtn{border:1.5px solid var(--line); background:#fff; border-radius:10px; padding:6px 10px; font-size:15px}
+  .iconbtn:hover, .tab:hover{border-color:var(--accent)}
+
+  /* 실행 중 타이머 바 */
+  .runbar{position:sticky; top:env(safe-area-inset-top, 0px); z-index:5; display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px;
+    background:var(--ink); color:#fff; border-radius:14px; padding:10px 16px}
+  .runbar[hidden]{display:none}
+  .runbar .name{font-size:17px; font-weight:700; min-width:0; overflow-wrap:anywhere}
+  .runbar .clock{font-size:22px; font-variant-numeric:tabular-nums}
+  .runbar .meter{flex:1 1 160px; height:8px; background:rgba(255,255,255,.25); border-radius:999px; overflow:hidden}
+  .runbar .meter i{display:block; height:100%; background:var(--mid); border-radius:999px}
+  .runbar .meter.over i{background:#ffb4b4}
+  .runbar .hint{font-size:13px; opacity:.85}
+  .runbar button{border:0; border-radius:10px; padding:7px 14px; font-weight:700; font-size:14px}
+  .runbar .stop{background:#fff; color:var(--ink)}
+  .runbar .done{background:var(--accent); color:#fff}
+
+  .card{background:var(--card); border-radius:18px; padding:18px; box-shadow:0 8px 30px rgba(255,92,157,.18); min-width:0}
+  h2{font-size:20px; text-wrap:balance}
+  .sub{color:var(--muted); font-size:13px}
+
+  /* 캘린더 화면 */
+  .main{display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:14px; align-items:start}
+  .calhead{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin-bottom:12px}
+  .calhead h2{font-size:24px; margin-right:auto}
+  .nav{display:flex; gap:6px}
+  .nav button{border:1.5px solid var(--line); background:#fff; color:var(--muted); border-radius:10px; padding:5px 12px; font-weight:700; display:inline-flex; align-items:center}
+  .nav button:hover{border-color:var(--accent); color:var(--accent-d)}
+  select.view{border:1.5px solid var(--line); border-radius:10px; background:var(--soft); padding:6px 10px; font-size:14px; max-width:100%}
+  .grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px}
+  .dow{text-align:center; font-size:12px; font-weight:700; color:var(--muted)}
+  .dow.sun{color:var(--high)}
+  .day{min-height:112px; border:1.5px solid var(--line); border-radius:10px; background:#fff; padding:4px; text-align:left;
+    display:flex; flex-direction:column; gap:3px; min-width:0}
+  .day.other{background:var(--soft); opacity:.55}
+  .day.sel{border-color:var(--accent); box-shadow:0 0 0 1.5px var(--accent)}
+  .day .num{font-size:13px; font-weight:700; padding:0 4px; align-self:flex-start; border-radius:999px}
+  .day.sun .num{color:var(--high)}
+  .day.today .num{background:var(--accent); color:#fff}
+  .chip{display:block; font-size:12px; line-height:1.35; padding:1px 6px; border-radius:6px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .chip.done{opacity:.4; text-decoration:line-through}
+  .more{font-size:11px; color:var(--muted); padding-left:4px}
+  .legend{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:10px; font-size:12px; color:var(--muted)}
+  .legend span{display:inline-flex; align-items:center; gap:4px}
+  .dot{display:inline-block; width:9px; height:9px; border-radius:50%}
+
+  /* 오른쪽 패널 */
+  .side{display:flex; flex-direction:column; gap:12px; position:sticky; top:12px}
+  .dayhead{display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap}
+  .seg{display:flex; gap:4px}
+  .seg button{border:1.5px solid var(--line); background:#fff; color:var(--muted); border-radius:9px; padding:4px 10px; font-size:13px; font-weight:700}
+  .seg button.on{background:var(--accent); border-color:var(--accent); color:#fff}
+  .addbtn{width:100%; border:0; border-radius:12px; background:var(--accent); color:#fff; font-size:15px; font-weight:700; padding:10px}
+  .addbtn:hover{background:var(--accent-d)}
+  form.add{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  form.add[hidden]{display:none}
+  form.add .full{grid-column:1/-1}
+  form.add label{display:flex; flex-direction:column; gap:2px; font-size:12px; color:var(--muted); min-width:0}
+  .field{width:100%; min-width:0; padding:9px 10px; font-size:15px; border:1.5px solid var(--line); border-radius:10px; background:var(--soft)}
+  .field:focus{outline:none; border-color:var(--accent)}
+  .hintline{font-size:12px; color:var(--accent-d); min-height:1.2em}
   ul{list-style:none}
-  li{display:flex; align-items:center; gap:10px; padding:12px 4px; border-bottom:1px solid var(--line)}
-  li input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent); flex-shrink:0}
-  li .body{flex:1; min-width:0}
-  li .text{overflow-wrap:anywhere}
-  li .meta{display:flex; gap:6px; align-items:center; margin-top:2px; font-size:12px; color:var(--muted)}
-  li.done .text{color:var(--muted); text-decoration:line-through}
-  .badge{display:inline-block; padding:1px 8px; border-radius:999px; color:#fff; font-size:11px; font-weight:700}
+  .task{border-bottom:1px solid var(--line); padding:10px 2px; display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:4px 10px; align-items:start}
+  .task input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent); margin-top:2px}
+  .task .t{font-size:16px; overflow-wrap:anywhere}
+  .task.done .t{color:var(--muted); text-decoration:line-through}
+  .task.running{background:var(--soft); border-radius:10px}
+  .meta{display:flex; flex-wrap:wrap; gap:5px; align-items:center; margin-top:3px; font-size:12px; color:var(--muted)}
+  select.pill{border:0; border-radius:999px; color:#fff; font-size:11px; font-weight:700; padding:1px 4px; cursor:pointer; max-width:9em}
+  select.pill option{color:var(--ink); background:#fff}
   .p-high{background:var(--high)} .p-mid{background:var(--mid)} .p-low{background:var(--low)}
-  select.badge{padding:1px 6px; border:0; width:auto; flex:none; cursor:pointer}
-  select.cat{padding:1px 6px; border-radius:999px; border:0; color:#fff; font-size:11px; font-weight:700; width:auto; flex:none; cursor:pointer}
   .overdue{color:var(--high); font-weight:700}
-  .icon{border:0; background:none; color:var(--muted); font-size:20px; line-height:1; padding:4px 8px}
-  .icon:hover{color:var(--accent-d)}
-  .empty{text-align:center; color:var(--muted); padding:28px 0; font-size:15px}
-  .link{margin-top:14px; border:0; background:none; color:var(--muted); font-size:13px; text-decoration:underline}
-  .redo{font-size:12px; border:1.5px solid var(--line); background:#fff; color:var(--muted); border-radius:8px; padding:3px 8px}
-  .redo:hover{border-color:var(--accent); color:var(--accent-d)}
+  .timerow{grid-column:2/-1; display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:12px; color:var(--muted)}
+  .timerow input{width:58px; padding:3px 6px; font-size:13px; border:1.5px solid var(--line); border-radius:8px; background:#fff; font-variant-numeric:tabular-nums}
+  .play{border:1.5px solid var(--accent); background:#fff; color:var(--accent-d); border-radius:8px; padding:2px 10px; font-size:13px; font-weight:700}
+  .play.on{background:var(--accent); color:#fff}
+  .x{border:0; background:none; color:var(--muted); font-size:18px; line-height:1; padding:2px 6px}
+  .x:hover{color:var(--accent-d)}
+  .empty{text-align:center; color:var(--muted); padding:22px 0; font-size:14px}
+  .link{border:0; background:none; color:var(--muted); font-size:12px; text-decoration:underline; margin-top:8px}
+
+  /* 리포트 */
+  .report{display:flex; flex-direction:column; gap:14px}
+  .report[hidden], .main[hidden]{display:none}
+  .rhead{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
+  .rhead h2{font-size:24px; margin-right:auto}
+  .headline{font-size:22px; text-wrap:balance}
+  .headline small{display:block; font-size:13px; color:var(--muted)}
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px}
+  .kpi{background:var(--soft); border-radius:14px; padding:12px 14px}
+  .kpi .l{font-size:13px; color:var(--muted)}
+  .kpi .v{font-size:28px; font-variant-numeric:tabular-nums}
+  .kpi .d{font-size:12px; color:var(--muted)}
+  .up{color:var(--good)} .down{color:var(--high)}
+  .insights{display:flex; flex-direction:column; gap:8px; font-size:15px}
+  .insights li{padding-left:18px; position:relative}
+  .insights li::before{content:""; position:absolute; left:4px; top:.6em; width:6px; height:6px; border-radius:50%; background:var(--accent)}
+  .two{display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:14px}
+  .bars{display:flex; flex-direction:column; gap:8px}
+  .bar{display:grid; grid-template-columns:minmax(80px,9em) minmax(0,1fr); gap:8px; align-items:center; font-size:13px}
+  .bar .lab{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .bar .track{position:relative; height:22px}
+  .bar .fill{height:22px; border-radius:0 4px 4px 0; background:var(--accent); min-width:2px}
+  .bar .val{position:absolute; top:2px; font-size:12px; color:var(--ink); white-space:nowrap; font-variant-numeric:tabular-nums}
+  .tbl{width:100%; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums}
+  .tbl th, .tbl td{padding:6px 8px; border-bottom:1px solid var(--line); text-align:right}
+  .tbl th:first-child, .tbl td:first-child{text-align:left}
+  .tbl th{color:var(--muted); font-weight:700}
+  .scroll{overflow-x:auto}
+
+  /* 설정, 확인창, 토스트 */
+  .modal{position:fixed; inset:0; background:rgba(74,31,53,.35); display:flex; align-items:center; justify-content:center; padding:16px; z-index:20}
+  .modal[hidden]{display:none}
+  .sheet{background:#fff; border-radius:18px; padding:20px; width:min(560px,100%); max-height:90vh; overflow:auto; display:flex; flex-direction:column; gap:14px}
+  .sheet h3{font-size:16px}
+  .row{display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:14px}
+  .row input[type=number]{width:90px}
+  .row input[type=time]{width:150px}
+  .btn{border:1.5px solid var(--line); background:#fff; border-radius:10px; padding:6px 12px; font-size:14px; font-weight:700}
+  .btn.pri{background:var(--accent); border-color:var(--accent); color:#fff}
+  .clientrow{display:flex; gap:8px; align-items:center}
+  .clientrow input[type=color]{width:34px; height:34px; border:1.5px solid var(--line); border-radius:50%; padding:0; background:none}
+  .clientrow .field{padding:6px 10px}
+  .toasts{position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:30; max-width:min(380px,calc(100vw - 32px))}
+  .toast{background:var(--ink); color:#fff; border-radius:12px; padding:12px 14px; box-shadow:0 8px 24px rgba(0,0,0,.2); font-size:14px}
+  .toast b{display:block; font-size:15px}
+  .toast .acts{display:flex; gap:6px; margin-top:8px}
+  .toast .acts button{border:0; border-radius:8px; padding:5px 10px; font-weight:700; font-size:13px}
+
+  @media (max-width: 980px){
+    .main{grid-template-columns:1fr}
+    .side{position:static}
+    .day{min-height:74px}
+    .chip{font-size:11px; padding:0 4px}
+  }
+  @media (max-width: 560px){
+    .brand{font-size:22px}
+    .day{min-height:56px}
+    .chip{height:6px; padding:0; font-size:0}
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1 class="pagetitle">👧 클로이의 TO DO LIST</h1>
-  <div class="card">
-    <div class="head">
-      <h1 id="calTitle"></h1>
-      <div class="nav">
-        <button type="button" id="prev" aria-label="이전 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L4 7l5 5"/></svg></button>
-        <button type="button" id="todayBtn">오늘</button>
-        <button type="button" id="next" aria-label="다음 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2l5 5-5 5"/></svg></button>
-      </div>
-    </div>
-    <div class="grid" id="grid"></div>
-    <div class="legend" id="legend"></div>
+<div class="app">
+  <header class="top">
+    <h1 class="brand">👧 클로이의 TO DO LIST</h1>
+    <button class="quote" type="button" id="quote" title="눌러서 다른 명언 보기">
+      <div class="q" id="qText"></div>
+      <div class="by" id="qBy"></div>
+    </button>
+    <nav class="tabs" aria-label="화면">
+      <button class="tab on" type="button" data-view="cal">📅 캘린더</button>
+      <button class="tab" type="button" data-view="report">📊 월간 리포트</button>
+    </nav>
+    <button class="iconbtn" type="button" id="openSettings" aria-label="설정">⚙️ 설정</button>
+  </header>
+
+  <div class="runbar" id="runbar" hidden>
+    <span class="name" id="runName"></span>
+    <span class="clock" id="runClock">0:00</span>
+    <span class="meter" id="runMeter"><i id="runFill" style="width:0"></i></span>
+    <span class="hint" id="runHint"></span>
+    <button class="stop" type="button" id="runStop">⏸ 멈춤</button>
+    <button class="done" type="button" id="runDone">✔ 완료</button>
   </div>
 
-  <div class="card quote" id="quoteCard" role="button" tabindex="0" aria-label="다른 명언 보기">
-    <p class="qlabel" id="qLabel"></p>
-    <p class="qtext" id="qText"></p>
-    <p class="qby" id="qBy"></p>
-    <p class="qhint">눌러서 다른 명언 보기</p>
-  </div>
-
-  <div class="card">
-    <h1>📝 할 일 목록</h1>
-    <p class="sub" id="count"></p>
-    <form id="form">
-      <button class="more-btn" type="button" id="detailBtn" aria-expanded="false">자세히 보기</button>
-      <div class="details" id="details" hidden>
-      <input type="text" id="input" placeholder="할 일을 입력하세요" maxlength="200" autocomplete="off">
-      <input type="date" id="due" aria-label="마감일">
-      <select id="cat" aria-label="카테고리"></select>
-      <select id="prio" aria-label="우선순위">
-        <option value="high">우선순위: 높음</option>
-        <option value="mid" selected>우선순위: 보통</option>
-        <option value="low">우선순위: 낮음</option>
-      </select>
+  <!-- 캘린더 화면 -->
+  <section class="main" id="viewCal">
+    <div class="card">
+      <div class="calhead">
+        <h2 id="calTitle"></h2>
+        <select class="view" id="viewFilter" aria-label="캘린더에 보일 일"></select>
+        <div class="nav">
+          <button type="button" id="prev" aria-label="이전 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L4 7l5 5"/></svg></button>
+          <button type="button" id="todayBtn">오늘</button>
+          <button type="button" id="next" aria-label="다음 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2l5 5-5 5"/></svg></button>
+        </div>
       </div>
-    </form>
-    <button class="add" id="addBtn" type="submit" form="form" hidden>추가</button>
-    <div class="filters" id="filters">
-      <button data-f="all" class="on">전체</button>
-      <button data-f="active">진행중</button>
-      <button data-f="done">완료</button>
+      <div class="grid" id="grid"></div>
+      <div class="legend" id="legend"></div>
     </div>
-    <div class="datebar" id="dateBar" hidden><span id="dateBarText"></span><button class="redo" type="button" id="dateClear">전체 보기</button></div>
-    <ul id="list"></ul>
-    <button class="link" id="clear">완료한 항목 모두 삭제</button>
+
+    <aside class="side">
+      <div class="card">
+        <div class="dayhead">
+          <h2 id="dayTitle"></h2>
+          <div class="seg" id="scope">
+            <button type="button" data-s="day" class="on">이 날</button>
+            <button type="button" data-s="all">전체</button>
+          </div>
+        </div>
+        <p class="sub" id="daySum"></p>
+        <div style="margin-top:10px; display:flex; flex-direction:column; gap:10px">
+          <button class="addbtn" type="button" id="addToggle" aria-expanded="false">+ 할 일 추가</button>
+          <form class="add" id="addForm" hidden>
+            <input class="field full" id="fText" placeholder="할 일을 입력하세요" maxlength="200" autocomplete="off" aria-label="할 일">
+            <label>날짜<input class="field" type="date" id="fDue"></label>
+            <label>마감 시간 (선택)<input class="field" type="time" id="fTime"></label>
+            <label>카테고리<select class="field" id="fCat"></select></label>
+            <label id="fClientWrap">광고주<select class="field" id="fClient"></select></label>
+            <label>우선순위<select class="field" id="fPrio"><option value="high">높음</option><option value="mid" selected>보통</option><option value="low">낮음</option></select></label>
+            <label>예상 시간 (분)<input class="field" type="number" min="1" step="1" id="fEst" placeholder="비우면 평소 기록"></label>
+            <p class="hintline full" id="fHint"></p>
+            <button class="addbtn full" type="submit">추가</button>
+          </form>
+          <div class="seg" id="status">
+            <button type="button" data-f="all" class="on">전체</button>
+            <button type="button" data-f="active">진행중</button>
+            <button type="button" data-f="done">완료</button>
+          </div>
+        </div>
+        <ul id="list"></ul>
+        <button class="link" type="button" id="clearDone">완료한 항목 모두 삭제</button>
+      </div>
+    </aside>
+  </section>
+
+  <!-- 월간 리포트 -->
+  <section class="report" id="viewReport" hidden>
+    <div class="card">
+      <div class="rhead">
+        <h2 id="rTitle"></h2>
+        <div class="nav">
+          <button type="button" id="rPrev" aria-label="이전 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L4 7l5 5"/></svg></button>
+          <button type="button" id="rNext" aria-label="다음 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2l5 5-5 5"/></svg></button>
+        </div>
+      </div>
+      <p class="headline" id="rHeadline" style="margin-top:8px"></p>
+    </div>
+    <div class="kpis" id="rKpis"></div>
+    <div class="card">
+      <h2>💡 이번 달 인사이트</h2>
+      <ul class="insights" id="rInsights" style="margin-top:10px"></ul>
+    </div>
+    <div class="two">
+      <div class="card">
+        <h2>⏱ 어디에 시간을 썼나</h2>
+        <p class="sub">이번 달 기록된 작업 시간 (업무는 광고주별)</p>
+        <div class="bars" id="rBars" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <h2>🔁 반복하는 일, 빨라졌나</h2>
+        <p class="sub">같은 이름의 일: 이번 달 평균 vs 그 전 평균</p>
+        <div class="scroll" style="margin-top:12px"><table class="tbl" id="rRepeat"></table></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🎯 예상 vs 실제 (그룹별)</h2>
+      <p class="sub">예상 시간을 넣은 일만 계산해요. 100%보다 크면 예상보다 오래 걸린 거예요.</p>
+      <div class="scroll" style="margin-top:12px"><table class="tbl" id="rGroups"></table></div>
+    </div>
+  </section>
+</div>
+
+<!-- 설정 -->
+<div class="modal" id="settings" hidden role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="sheet">
+    <div class="row" style="justify-content:space-between"><h2 id="setTitle">⚙️ 설정</h2><button class="x" type="button" id="closeSettings" aria-label="닫기">×</button></div>
+
+    <section style="display:flex; flex-direction:column; gap:8px">
+      <h3>🔔 알림</h3>
+      <div class="row"><span id="permText"></span><button class="btn pri" type="button" id="askPerm">알림 켜기</button><button class="btn" type="button" id="testNotify">테스트</button></div>
+      <p class="sub">앱(또는 크롬)이 켜져 있을 때만 알림이 와요. 창을 최소화해 둬도 괜찮아요.</p>
+      <div class="row">마감 미리 알림:
+        <label><input type="checkbox" class="off" value="2880"> 2일 전</label>
+        <label><input type="checkbox" class="off" value="1440"> 1일 전</label>
+        <label><input type="checkbox" class="off" value="180"> 3시간 전</label>
+        <label><input type="checkbox" class="off" value="60"> 1시간 전</label>
+      </div>
+      <div class="row"><label for="sDueTime">마감 시간을 안 적었을 때 기준</label><input class="field" type="time" id="sDueTime"></div>
+      <div class="row"><label for="sWarn">작업 중, 평소 시간 끝나기</label><input class="field" type="number" min="1" max="60" id="sWarn"> 분 전에 알림</div>
+      <div class="row"><label><input type="checkbox" id="sSound"> 알림 소리</label></div>
+    </section>
+
+    <section style="display:flex; flex-direction:column; gap:8px">
+      <h3>🏢 광고주 (업무 아래)</h3>
+      <div id="clientRows" style="display:flex; flex-direction:column; gap:6px"></div>
+      <form class="clientrow" id="clientForm">
+        <input type="color" id="newClientColor" value="#ff5c9d" aria-label="색상">
+        <input class="field" id="newClientName" placeholder="새 광고주 이름" maxlength="30" autocomplete="off">
+        <button class="btn pri" type="submit">추가</button>
+      </form>
+    </section>
   </div>
 </div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
 <script>
-  var KEY = 'todo-list-v2', OLD_KEY = 'todo-list-v1';
+  var KEY = 'todo-list-v2';
   var DEFAULT_CATS = [
     { id: 'work', name: '업무', color: '#ff5c9d' },
     { id: 'study', name: '공부', color: '#a78bfa' },
@@ -177,69 +345,716 @@
     { id: 'life', name: '생활', color: '#f59e0b' },
     { id: 'etc', name: '기타', color: '#94a3b8' }
   ];
-  var state = { todos: [], missed: [], cats: DEFAULT_CATS };
-  var filter = 'all';
-  var dateFilter = today();                      // 처음 열면 오늘 할 일만 보임
-  var DOW = ['일', '월', '화', '수', '목', '금', '토'];
-  var nowD = new Date();
-  var viewY = nowD.getFullYear(), viewM = nowD.getMonth();
+  var CLIENT_COLORS = ['#e0457f', '#7c5cff', '#0ea5a0', '#f97316', '#2563eb', '#c026d3', '#65a30d', '#b45309'];
+  var DEFAULT_SETTINGS = { notify: false, sound: true, warnMin: 5, offsets: [1440, 120], dueTime: '18:00' };
   var PRIO = { high: ['높음', 0], mid: ['보통', 1], low: ['낮음', 2] };
+  var DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
+  var state = { todos: [], missed: [], cats: DEFAULT_CATS, clients: [], settings: {}, active: null };
   try {
-    var raw = localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY);
-    var parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) state.todos = parsed;          // v1: 배열만 저장돼 있었음
-    else if (parsed) state = { todos: parsed.todos || [], missed: parsed.missed || [], cats: parsed.cats || DEFAULT_CATS };
+    var raw = JSON.parse(localStorage.getItem(KEY));
+    if (Array.isArray(raw)) state.todos = raw;
+    else if (raw) {
+      state.todos = raw.todos || [];
+      state.missed = raw.missed || [];
+      state.cats = raw.cats || DEFAULT_CATS;
+      state.clients = raw.clients || [];
+      state.settings = raw.settings || {};
+      state.active = raw.active || null;
+    }
   } catch (e) {}
+  Object.keys(DEFAULT_SETTINGS).forEach(function (k) { if (state.settings[k] === undefined) state.settings[k] = DEFAULT_SETTINGS[k]; });
+  state.todos.forEach(function (t) {
+    if (!t.id) t.id = uid();
+    if (!t.prio) t.prio = 'mid';
+    if (t.cat === undefined) t.cat = '';
+    if (!t.client) t.client = '';
+    if (!t.spentMin) t.spentMin = 0;
+    if (!t.log) t.log = [];
+    if (!t.notified) t.notified = {};
+  });
 
   var $ = function (id) { return document.getElementById(id); };
-
-  function today() {
-    var d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
-  function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
-  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-
-  function sorted(list) {
-    return list.slice().sort(function (a, b) {
-      if (a.done !== b.done) return a.done ? 1 : -1;
-      var pa = PRIO[a.prio || 'mid'][1], pb = PRIO[b.prio || 'mid'][1];
-      if (pa !== pb) return pa - pb;
-      if (a.due && b.due) return a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
-      if (a.due || b.due) return a.due ? -1 : 1;                // 마감일 있는 항목 먼저
-      return 0;
-    });
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function today() { return ymd(new Date()); }
+  function md(key) { var q = key.split('-'); return (+q[1]) + '월 ' + (+q[2]) + '일'; }
+  function fmtMin(m) {
+    m = Math.round(m);
+    if (m < 60) return m + '분';
+    return Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + (m % 60) + '분' : '');
   }
+  function fmtClock(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    return (h ? h + ':' + pad(m) : m) + ':' + pad(s);
+  }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
 
   function catById(id) {
     for (var i = 0; i < state.cats.length; i++) if (state.cats[i].id === id) return state.cats[i];
     return { id: '', name: '미분류', color: '#94a3b8' };
   }
+  function clientById(id) {
+    for (var i = 0; i < state.clients.length; i++) if (state.clients[i].id === id) return state.clients[i];
+    return null;
+  }
+  // 업무 + 광고주면 광고주 색/이름, 아니면 카테고리
+  function groupOf(t) {
+    var c = t.cat === 'work' && clientById(t.client);
+    if (c) return { key: 'c:' + c.id, name: c.name, color: c.color };
+    var k = catById(t.cat);
+    return { key: 'k:' + (k.id || 'none') + (t.cat === 'work' ? ':noclient' : ''), name: t.cat === 'work' ? '업무 (광고주 없음)' : k.name, color: k.color };
+  }
+  function norm(s) { return (s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
 
-  function fillSelect(sel, withAll, withNone, current) {
-    sel.innerHTML = '';
-    var add = function (v, label) {
-      var o = document.createElement('option');
-      o.value = v; o.textContent = label;
-      sel.appendChild(o);
+  // ---------- 시간 계산 ----------
+  function elapsedMin(t) {
+    var m = t.spentMin || 0;
+    if (state.active && state.active.id === t.id) m += (Date.now() - state.active.start) / 60000;
+    return m;
+  }
+  // 평소 걸린 시간: 같은 이름 > 같은 광고주 > 같은 카테고리 순으로 완료 기록의 평균
+  function learned(t, exceptId) {
+    var done = state.todos.filter(function (x) { return x.done && x.spentMin >= 1 && x.id !== exceptId; });
+    var pick = function (arr, label) {
+      if (!arr.length) return null;
+      var sum = arr.reduce(function (a, x) { return a + x.spentMin; }, 0);
+      return { min: Math.round(sum / arr.length), n: arr.length, label: label };
     };
-    if (withAll) add('all', '모든 카테고리');
-    state.cats.forEach(function (c) { add(c.id, c.name); });
-    if (withNone) add('', '미분류');
-    sel.value = current;
-    if (sel.value !== current) sel.selectedIndex = 0;
+    var same = done.filter(function (x) { return norm(x.text) === norm(t.text); });
+    if (same.length) return pick(same, '같은 이름의 일');
+    if (t.cat === 'work' && t.client) {
+      var c = done.filter(function (x) { return x.cat === 'work' && x.client === t.client; });
+      if (c.length >= 2) return pick(c, (clientById(t.client) || {}).name + ' 업무');
+    }
+    var k = done.filter(function (x) { return x.cat === t.cat; });
+    if (k.length >= 2) return pick(k, catById(t.cat).name + ' 일');
+    return null;
+  }
+  function expectedMin(t) {
+    if (t.estMin) return t.estMin;
+    var l = learned(t, t.id);
+    return l ? l.min : null;
   }
 
-  function renderCatControls() {
-    var cur = $('cat').value;
-    fillSelect($('cat'), false, true, cur || (state.cats[0] ? state.cats[0].id : ''));
+  // ---------- 알림 ----------
+  var audioCtx = null;
+  document.addEventListener('pointerdown', function () {
+    if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  }, { once: true });
+  function beep() {
+    if (!state.settings.sound || !audioCtx) return;
+    try {
+      [0, 0.25].forEach(function (off) {
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(audioCtx.destination);
+        var t0 = audioCtx.currentTime + off;
+        g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+        o.start(t0); o.stop(t0 + 0.22);
+      });
+    } catch (e) {}
+  }
+  function toast(title, body, actions, sticky) {
+    var box = el('div', 'toast');
+    box.appendChild(el('b', '', title));
+    if (body) box.appendChild(el('span', '', body));
+    var close = function () { if (box.parentNode) box.parentNode.removeChild(box); };
+    if (actions && actions.length) {
+      var acts = el('div', 'acts');
+      actions.forEach(function (a) {
+        var b = el('button', '', a[0]); b.type = 'button';
+        b.style.background = a[2] ? 'var(--accent)' : '#fff'; b.style.color = a[2] ? '#fff' : 'var(--ink)';
+        b.onclick = function () { close(); a[1](); };
+        acts.appendChild(b);
+      });
+      box.appendChild(acts);
+    }
+    var tw = $('toasts'); tw.appendChild(box);
+    while (tw.children.length > 4) tw.removeChild(tw.firstChild);
+    if (!sticky) setTimeout(close, 9000);
+  }
+  function notify(title, body, actions, sticky) {
+    toast(title, body, actions, sticky);
+    beep();
+    if (state.settings.notify && 'Notification' in window && Notification.permission === 'granted' && document.hidden) {
+      try { new Notification(title, { body: body, icon: 'chipmunk-192.png', tag: title }); } catch (e) {}
+    }
   }
 
-  function ymd(y, m, d) { return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
+  function dueAt(t) {
+    var time = t.dueTime || state.settings.dueTime || '18:00';
+    return new Date(t.due + 'T' + time + ':00').getTime();
+  }
+  function offLabel(min) { return min >= 1440 ? (min / 1440) + '일' : min >= 60 ? (min / 60) + '시간' : min + '분'; }
+  // 마감 알림: 지난 알림이 여러 개면 가장 가까운 하나만 보내고 나머지는 보낸 것으로 처리
+  function checkDeadlines() {
+    var now = Date.now(), changed = false;
+    var offs = state.settings.offsets.slice().sort(function (a, b) { return b - a; });
+    state.todos.forEach(function (t) {
+      if (t.done || !t.due) return;
+      var at = dueAt(t);
+      if (now >= at) return;
+      var due = offs.filter(function (o) { return now >= at - o * 60000 && !t.notified[o]; });
+      if (!due.length) return;
+      due.forEach(function (o) { t.notified[o] = true; });
+      changed = true;
+      var left = (at - now) / 60000;
+      notify('📅 마감 ' + (left >= 1440 ? Math.round(left / 1440) + '일' : fmtMin(left)) + ' 전', t.text + ' · ' + md(t.due) + (t.dueTime ? ' ' + t.dueTime : ''),
+        [['지금 시작', function () { startTimer(t); }, true], ['닫기', function () {}]], true);
+    });
+    if (changed) save();
+  }
 
+  // ---------- 타이머 ----------
+  function startTimer(t) {
+    if (state.active && state.active.id === t.id) return;
+    if (state.active) stopTimer();
+    state.active = { id: t.id, start: Date.now(), extra: 0, warned: false, over: false };
+    if (!state.settings.notify && 'Notification' in window && Notification.permission === 'default') {
+      toast('🔔 알림을 켜 두면 좋아요', '시간이 다 되어 갈 때 다른 창을 보고 있어도 알려드려요.', [['알림 켜기', askPermission, true]]);
+    }
+    save(); renderAll();
+  }
+  function stopTimer() {
+    var a = state.active; if (!a) return;
+    var t = byId(a.id);
+    if (t) {
+      var add = (Date.now() - a.start) / 60000;
+      t.spentMin = (t.spentMin || 0) + add;
+      t.log.push({ date: today(), min: Math.round(add * 10) / 10 });
+    }
+    state.active = null;
+    save();
+  }
+  function completeTask(t) {
+    if (state.active && state.active.id === t.id) stopTimer();
+    t.done = true; t.doneAt = today();
+    var exp = expectedMin(t);
+    if (t.spentMin >= 1) {
+      var msg = fmtMin(t.spentMin) + ' 걸렸어요' + (exp ? ' (예상 ' + fmtMin(exp) + ')' : '');
+      toast('✔ ' + t.text, msg);
+    }
+    save(); renderAll();
+  }
+  function byId(id) { for (var i = 0; i < state.todos.length; i++) if (state.todos[i].id === id) return state.todos[i]; return null; }
+
+  function tick() {
+    var a = state.active;
+    if (!a) { $('runbar').hidden = true; return; }
+    var t = byId(a.id);
+    if (!t) { state.active = null; save(); $('runbar').hidden = true; return; }
+    $('runbar').hidden = false;
+    var el2 = elapsedMin(t), exp = expectedMin(t);
+    $('runName').textContent = '⏱ ' + t.text;
+    $('runClock').textContent = fmtClock(el2 * 60);
+    if (exp) {
+      var target = exp + (a.extra || 0);
+      var pct = Math.min(100, el2 / target * 100);
+      $('runFill').style.width = pct + '%';
+      $('runMeter').className = 'meter' + (el2 > target ? ' over' : '');
+      var left = target - el2;
+      $('runHint').textContent = left >= 0 ? '평소 ' + fmtMin(exp) + ' · ' + Math.ceil(left) + '분 남음' : '평소보다 ' + Math.ceil(-left) + '분 넘음';
+      if (!a.warned && left <= state.settings.warnMin && left > 0) {
+        a.warned = true; save();
+        notify('⏰ ' + Math.ceil(left) + '분 남았어요', '"' + t.text + '" 평소 ' + fmtMin(exp) + ' 걸리던 일이에요. 마무리해 볼까요?', [['확인', function () {}, true]], true);
+      }
+      if (!a.over && left <= 0) {
+        a.over = true; save();
+        notify('⌛ 평소 시간이 다 됐어요', '"' + t.text + '" 다 끝났나요?', [
+          ['다 했어요', function () { completeTask(t); }, true],
+          ['10분 더', function () { if (state.active) { state.active.extra = (state.active.extra || 0) + 10; state.active.over = false; state.active.warned = false; save(); } }],
+          ['계속', function () {}]
+        ], true);
+      }
+    } else {
+      $('runFill').style.width = '0';
+      $('runHint').textContent = '평소 기록이 없어요. 끝나면 이 시간이 기준이 돼요.';
+    }
+  }
+
+  // ---------- 화면 상태 ----------
+  var view = 'cal', scope = 'day', status = 'all', calFilter = 'all';
+  var sel = today();
+  var viewY = new Date().getFullYear(), viewM = new Date().getMonth();
+  var rY = viewY, rM = viewM;
+
+  function passFilter(t) {
+    if (calFilter === 'all') return true;
+    if (calFilter === 'work') return t.cat === 'work';
+    if (calFilter.indexOf('c:') === 0) return t.cat === 'work' && t.client === calFilter.slice(2);
+    if (calFilter.indexOf('k:') === 0) return t.cat === calFilter.slice(2);
+    return true;
+  }
+
+  function fillFilter() {
+    var s = $('viewFilter'), cur = calFilter;
+    s.innerHTML = '';
+    var add = function (parent, v, label) { var o = el('option', '', label); o.value = v; parent.appendChild(o); };
+    add(s, 'all', '모든 일');
+    add(s, 'work', '업무 전체');
+    if (state.clients.length) {
+      var g = document.createElement('optgroup'); g.label = '광고주';
+      state.clients.forEach(function (c) { add(g, 'c:' + c.id, '업무 > ' + c.name); });
+      s.appendChild(g);
+    }
+    var g2 = document.createElement('optgroup'); g2.label = '카테고리';
+    state.cats.filter(function (c) { return c.id !== 'work'; }).forEach(function (c) { add(g2, 'k:' + c.id, c.name); });
+    s.appendChild(g2);
+    s.value = cur;
+    if (s.value !== cur) { calFilter = 'all'; s.value = 'all'; }
+  }
+
+  function renderCal() {
+    $('calTitle').textContent = '📅 ' + viewY + '년 ' + (viewM + 1) + '월';
+    var grid = $('grid'); grid.innerHTML = '';
+    DOW.forEach(function (d, i) { grid.appendChild(el('div', 'dow' + (i === 0 ? ' sun' : ''), d)); });
+    var first = new Date(viewY, viewM, 1);
+    var start = new Date(viewY, viewM, 1 - first.getDay());
+    var weeks = Math.ceil((first.getDay() + new Date(viewY, viewM + 1, 0).getDate()) / 7);
+    var byDay = {};
+    state.todos.forEach(function (t) { if (t.due && passFilter(t)) (byDay[t.due] = byDay[t.due] || []).push(t); });
+    for (var i = 0; i < weeks * 7; i++) {
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      var key = ymd(d);
+      var cell = el('button', 'day' + (d.getMonth() !== viewM ? ' other' : '') + (d.getDay() === 0 ? ' sun' : '') + (key === today() ? ' today' : '') + (key === sel ? ' sel' : ''));
+      cell.type = 'button';
+      cell.setAttribute('aria-label', key);
+      cell.dataset.key = key;
+      cell.appendChild(el('span', 'num', d.getDate()));
+      var items = (byDay[key] || []).slice().sort(function (a, b) { return (a.done - b.done) || (PRIO[a.prio][1] - PRIO[b.prio][1]); });
+      var max = 4;
+      items.slice(0, max).forEach(function (t) {
+        var g = groupOf(t);
+        var c = el('span', 'chip' + (t.done ? ' done' : ''), (t.dueTime ? t.dueTime + ' ' : '') + (t.cat === 'work' && clientById(t.client) ? '[' + g.name + '] ' : '') + t.text);
+        c.style.background = g.color;
+        c.title = t.text;
+        cell.appendChild(c);
+      });
+      if (items.length > max) cell.appendChild(el('span', 'more', '+' + (items.length - max) + '개'));
+      cell.onclick = function () { sel = this.dataset.key; scope = 'day'; var p = sel.split('-'); if (+p[1] - 1 !== viewM) { viewY = +p[0]; viewM = +p[1] - 1; } renderAll(); };
+      grid.appendChild(cell);
+    }
+    var lg = $('legend'); lg.innerHTML = '';
+    var item = function (color, label) { var sp = el('span'); var dt = el('i', 'dot'); dt.style.background = color; sp.appendChild(dt); sp.appendChild(document.createTextNode(label)); lg.appendChild(sp); };
+    state.cats.forEach(function (c) { item(c.color, c.name); });
+    state.clients.forEach(function (c) { item(c.color, '업무 > ' + c.name); });
+  }
+
+  function sortTasks(list) {
+    return list.slice().sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      var pa = PRIO[a.prio][1], pb = PRIO[b.prio][1];
+      if (pa !== pb) return pa - pb;
+      if (a.due && b.due && a.due !== b.due) return a.due < b.due ? -1 : 1;
+      if ((a.dueTime || '') !== (b.dueTime || '')) return (a.dueTime || '99') < (b.dueTime || '99') ? -1 : 1;
+      if (a.due || b.due) return a.due ? -1 : 1;
+      return 0;
+    });
+  }
+
+  function fillCatSelect(s, cur) {
+    s.innerHTML = '';
+    state.cats.forEach(function (c) { var o = el('option', '', c.name); o.value = c.id; s.appendChild(o); });
+    var o = el('option', '', '미분류'); o.value = ''; s.appendChild(o);
+    s.value = cur;
+  }
+  function fillClientSelect(s, cur) {
+    s.innerHTML = '';
+    var o = el('option', '', '광고주 없음'); o.value = ''; s.appendChild(o);
+    state.clients.forEach(function (c) { var x = el('option', '', c.name); x.value = c.id; s.appendChild(x); });
+    var n = el('option', '', '+ 새 광고주…'); n.value = '__new'; s.appendChild(n);
+    s.value = cur || '';
+  }
+  function newClientFrom(s, onDone) {
+    var name = (window.prompt('새 광고주 이름') || '').trim();
+    if (!name) { s.value = ''; return; }
+    var c = { id: uid(), name: name, color: CLIENT_COLORS[state.clients.length % CLIENT_COLORS.length] };
+    state.clients.push(c); save();
+    onDone(c.id);
+  }
+
+  function renderList() {
+    $('dayTitle').textContent = scope === 'day' ? md(sel) + ' (' + DOW[new Date(sel + 'T00:00').getDay()] + ')' : '전체 할 일';
+    var base = state.todos.filter(passFilter);
+    var dayTasks = base.filter(function (t) { return t.due === sel; });
+    var spentThatDay = 0;
+    state.todos.forEach(function (t) { (t.log || []).forEach(function (l) { if (l.date === sel) spentThatDay += l.min; }); });
+    if (state.active && sel === today()) spentThatDay += (Date.now() - state.active.start) / 60000;
+    if (scope === 'day') {
+      var left = dayTasks.filter(function (t) { return !t.done; }).length;
+      $('daySum').textContent = (dayTasks.length ? '남은 할 일 ' + left + '개 / ' + dayTasks.length + '개' : '마감인 할 일이 없어요') + (spentThatDay >= 1 ? ' · 이 날 작업 ' + fmtMin(spentThatDay) : '');
+    } else {
+      $('daySum').textContent = '남은 할 일 ' + base.filter(function (t) { return !t.done; }).length + '개 / ' + base.length + '개';
+    }
+
+    var shown = sortTasks(scope === 'day' ? dayTasks : base).filter(function (t) {
+      return status === 'all' || (status === 'done') === !!t.done;
+    });
+    var ul = $('list'); ul.innerHTML = '';
+    if (!shown.length) ul.appendChild(el('div', 'empty', scope === 'day' ? '이 날 할 일이 없어요. 위에서 추가해 보세요.' : '할 일이 없어요'));
+    shown.forEach(function (t) {
+      var running = state.active && state.active.id === t.id;
+      var li = el('li', 'task' + (t.done ? ' done' : '') + (running ? ' running' : ''));
+
+      var cb = el('input'); cb.type = 'checkbox'; cb.checked = !!t.done; cb.setAttribute('aria-label', '완료 표시');
+      cb.onchange = function () { if (cb.checked) completeTask(t); else { t.done = false; t.doneAt = ''; save(); renderAll(); } };
+
+      var body = el('div');
+      body.appendChild(el('div', 't', t.text));
+      var meta = el('div', 'meta');
+      var pr = el('select', 'pill p-' + t.prio); pr.setAttribute('aria-label', '우선순위');
+      Object.keys(PRIO).forEach(function (k) { var o = el('option', '', PRIO[k][0]); o.value = k; pr.appendChild(o); });
+      pr.value = t.prio;
+      pr.onchange = function () { t.prio = pr.value; save(); renderAll(); };
+      meta.appendChild(pr);
+      var ct = el('select', 'pill'); ct.setAttribute('aria-label', '카테고리');
+      fillCatSelect(ct, t.cat); ct.style.background = catById(t.cat).color;
+      ct.onchange = function () { t.cat = ct.value; if (t.cat !== 'work') t.client = ''; save(); renderAll(); };
+      meta.appendChild(ct);
+      if (t.cat === 'work') {
+        var cl = el('select', 'pill'); cl.setAttribute('aria-label', '광고주');
+        fillClientSelect(cl, t.client);
+        var cc = clientById(t.client); cl.style.background = cc ? cc.color : '#94a3b8';
+        cl.onchange = function () {
+          if (cl.value === '__new') return newClientFrom(cl, function (id) { t.client = id; save(); renderAll(); });
+          t.client = cl.value; save(); renderAll();
+        };
+        meta.appendChild(cl);
+      }
+      if (t.due) {
+        var late = !t.done && dueAt(t) < Date.now();
+        meta.appendChild(el('span', late ? 'overdue' : '', (scope === 'all' ? md(t.due) + ' ' : '') + (t.dueTime || '') + (late ? ' 마감 지남' : t.dueTime ? ' 마감' : '')));
+      }
+      body.appendChild(meta);
+
+      var del = el('button', 'x', '×'); del.type = 'button'; del.setAttribute('aria-label', '삭제');
+      del.onclick = function () {
+        if (state.active && state.active.id === t.id) state.active = null;
+        state.todos = state.todos.filter(function (x) { return x !== t; }); save(); renderAll();
+      };
+
+      var tr = el('div', 'timerow');
+      if (!t.done) {
+        var play = el('button', 'play' + (running ? ' on' : ''), running ? '⏸ 멈춤' : '▶ 시작'); play.type = 'button';
+        play.onclick = function () { if (running) { stopTimer(); renderAll(); } else startTimer(t); };
+        tr.appendChild(play);
+      }
+      var real = el('input'); real.type = 'number'; real.min = '0'; real.step = '1';
+      real.value = Math.round(elapsedMin(t)) || ''; real.placeholder = '0';
+      real.setAttribute('aria-label', '실제 걸린 시간(분)');
+      real.disabled = running;
+      real.onchange = function () {
+        var v = Math.max(0, parseFloat(real.value) || 0);
+        t.log.push({ date: t.doneAt || today(), min: Math.round((v - (t.spentMin || 0)) * 10) / 10 });
+        t.spentMin = v; save(); renderAll();
+      };
+      tr.appendChild(document.createTextNode('실제'));
+      tr.appendChild(real);
+      tr.appendChild(document.createTextNode('분 · 예상'));
+      var est = el('input'); est.type = 'number'; est.min = '0'; est.step = '5';
+      est.value = t.estMin || '';
+      var lr = learned(t, t.id);
+      est.placeholder = lr ? String(lr.min) : '-';
+      est.title = lr ? '비우면 평소 ' + fmtMin(lr.min) + ' (' + lr.label + ' ' + lr.n + '개 기준)' : '예상 시간(분)';
+      est.setAttribute('aria-label', '예상 시간(분)');
+      est.onchange = function () { t.estMin = Math.max(0, parseInt(est.value, 10) || 0) || null; save(); renderAll(); };
+      tr.appendChild(est);
+      tr.appendChild(document.createTextNode('분'));
+      if (lr && !t.estMin) tr.appendChild(el('span', '', '(평소 기록)'));
+
+      li.appendChild(cb); li.appendChild(body); li.appendChild(del); li.appendChild(tr);
+      ul.appendChild(li);
+    });
+    Array.prototype.forEach.call($('scope').children, function (b) { b.className = b.dataset.s === scope ? 'on' : ''; });
+    Array.prototype.forEach.call($('status').children, function (b) { b.className = b.dataset.f === status ? 'on' : ''; });
+  }
+
+  // ---------- 폼 ----------
+  function syncFormClient() { $('fClientWrap').hidden = $('fCat').value !== 'work'; }
+  function updateHint() {
+    var probe = { text: $('fText').value, cat: $('fCat').value, client: $('fCat').value === 'work' ? $('fClient').value : '' };
+    var l = $('fText').value.trim() ? learned(probe) : null;
+    $('fHint').textContent = l ? '평소 ' + fmtMin(l.min) + ' 걸렸어요 (' + l.label + ' ' + l.n + '개 기준)' : '';
+    $('fEst').placeholder = l ? '평소 ' + l.min : '비우면 평소 기록';
+  }
+  function setForm(open) {
+    $('addForm').hidden = !open;
+    $('addToggle').textContent = open ? '접기' : '+ 할 일 추가';
+    $('addToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      if (!$('fDue').value) $('fDue').value = sel;
+      $('fText').focus();
+    }
+  }
+  $('addToggle').onclick = function () { setForm($('addForm').hidden); };
+  $('fCat').onchange = function () { syncFormClient(); updateHint(); };
+  $('fClient').onchange = function () {
+    var s = $('fClient');
+    if (s.value === '__new') newClientFrom(s, function (id) { fillClientSelect(s, id); renderAll(); });
+    updateHint();
+  };
+  $('fText').oninput = updateHint;
+  $('addForm').onsubmit = function (e) {
+    e.preventDefault();
+    var text = $('fText').value.trim(); if (!text) return;
+    var cat = $('fCat').value;
+    state.todos.push({
+      id: uid(), text: text, done: false, prio: $('fPrio').value, cat: cat,
+      client: cat === 'work' ? ($('fClient').value === '__new' ? '' : $('fClient').value) : '',
+      due: $('fDue').value, dueTime: $('fTime').value, estMin: parseInt($('fEst').value, 10) || null,
+      spentMin: 0, log: [], notified: {}
+    });
+    // 만들 때 이미 지난 알림 시점은 건너뜀 (방금 만든 일에 바로 알림이 뜨지 않게)
+    var nt = state.todos[state.todos.length - 1];
+    if (nt.due) state.settings.offsets.forEach(function (o) { if (Date.now() >= dueAt(nt) - o * 60000) nt.notified[o] = true; });
+    $('fText').value = ''; $('fEst').value = ''; $('fTime').value = ''; $('fHint').textContent = '';
+    save(); renderAll(); $('fText').focus();
+  };
+
+  // ---------- 월간 리포트 ----------
+  function monthKey(y, m) { return y + '-' + pad(m + 1); }
+  function monthStats(mk) {
+    var done = state.todos.filter(function (t) { return t.done && (t.doneAt || '').indexOf(mk) === 0; });
+    var timed = done.filter(function (t) { return t.spentMin >= 1; });
+    var spent = 0;
+    state.todos.forEach(function (t) { (t.log || []).forEach(function (l) { if (l.date.indexOf(mk) === 0) spent += l.min; }); });
+    var withEst = timed.filter(function (t) { return t.estMin; });
+    var estSum = withEst.reduce(function (a, t) { return a + t.estMin; }, 0);
+    var actSum = withEst.reduce(function (a, t) { return a + t.spentMin; }, 0);
+    var inTime = withEst.filter(function (t) { return t.spentMin <= t.estMin; }).length;
+    var withDue = done.filter(function (t) { return t.due; });
+    var onTime = withDue.filter(function (t) { return t.doneAt <= t.due; }).length;
+    return {
+      done: done.length, timed: timed, spent: spent,
+      ratio: estSum ? actSum / estSum : null, nEst: withEst.length,
+      inTimeRate: withEst.length ? inTime / withEst.length : null,
+      onTimeRate: withDue.length ? onTime / withDue.length : null, nDue: withDue.length
+    };
+  }
+  // 반복하는 일: 같은 이름의 일에서 이번 달 평균과 그 전(이전 모든 달) 평균 비교
+  function repeatStats(mk) {
+    var groups = {};
+    state.todos.forEach(function (t) {
+      if (!t.done || !(t.spentMin >= 1) || !t.doneAt) return;
+      var k = norm(t.text);
+      (groups[k] = groups[k] || { name: t.text, cur: [], prev: [] });
+      if (t.doneAt.indexOf(mk) === 0) groups[k].cur.push(t.spentMin);
+      else if (t.doneAt < mk) groups[k].prev.push(t.spentMin);
+    });
+    var avg = function (a) { return a.reduce(function (x, y) { return x + y; }, 0) / a.length; };
+    return Object.keys(groups).map(function (k) { return groups[k]; })
+      .filter(function (g) { return g.cur.length && g.prev.length; })
+      .map(function (g) { var c = avg(g.cur), p = avg(g.prev); return { name: g.name, cur: c, prev: p, n: g.cur.length, change: (p - c) / p }; })
+      .sort(function (a, b) { return b.n - a.n; });
+  }
+  function pct(x) { return Math.round(x * 100) + '%'; }
+  function deltaPP(cur, prev, higherIsGood) {
+    if (cur === null || prev === null) return '';
+    var d = Math.round((cur - prev) * 100);
+    if (!d) return '지난달과 같아요';
+    var good = higherIsGood ? d > 0 : d < 0;
+    return '<span class="' + (good ? 'up' : 'down') + '">지난달보다 ' + (d > 0 ? '+' : '') + d + '%p</span>';
+  }
+
+  function renderReport() {
+    var mk = monthKey(rY, rM), pd = new Date(rY, rM - 1, 1), pk = monthKey(pd.getFullYear(), pd.getMonth());
+    $('rTitle').textContent = '📊 ' + rY + '년 ' + (rM + 1) + '월 리포트';
+    var s = monthStats(mk), p = monthStats(pk), rep = repeatStats(mk);
+
+    // 헤드라인: 반복하는 일이 빨라진 정도(건수 가중 평균)
+    var w = 0, acc = 0;
+    rep.forEach(function (r) { w += r.n; acc += r.change * r.n; });
+    var head = $('rHeadline');
+    if (w) {
+      var ch = acc / w;
+      head.innerHTML = '';
+      head.appendChild(document.createTextNode(ch >= 0 ? '같은 종류의 일을 예전보다 평균 ' + pct(ch) + ' 빨리 끝냈어요 🎉' : '같은 종류의 일에 예전보다 평균 ' + pct(-ch) + ' 더 걸렸어요'));
+      head.appendChild(el('small', '', '이번 달에 다시 한 일 ' + rep.length + '종류, ' + w + '건 기준'));
+    } else if (s.timed.length) {
+      head.textContent = '이번 달 ' + s.done + '개 완료, 기록된 작업 시간 ' + fmtMin(s.spent);
+      head.appendChild(el('small', '', '같은 이름의 일을 다음 달에도 기록하면 얼마나 빨라졌는지 보여드려요.'));
+    } else {
+      head.textContent = '아직 이 달의 시간 기록이 없어요';
+      head.appendChild(el('small', '', '할 일에서 ▶ 시작을 누르거나 실제 시간을 적으면 여기에 쌓여요.'));
+    }
+
+    var k = $('rKpis'); k.innerHTML = '';
+    var kpi = function (label, value, delta, note) {
+      var b = el('div', 'kpi'); b.appendChild(el('div', 'l', label)); b.appendChild(el('div', 'v', value));
+      var d = el('div', 'd'); d.innerHTML = delta || ''; if (note) d.appendChild(document.createTextNode((delta ? ' · ' : '') + note));
+      b.appendChild(d); k.appendChild(b);
+    };
+    var dCount = s.done - p.done;
+    kpi('완료한 일', s.done + '개', p.done || s.done ? '<span class="' + (dCount >= 0 ? 'up' : 'down') + '">지난달보다 ' + (dCount >= 0 ? '+' : '') + dCount + '개</span>' : '');
+    kpi('기록된 작업 시간', fmtMin(s.spent), '', p.spent ? '지난달 ' + fmtMin(p.spent) : '');
+    kpi('예상 대비 실제', s.ratio === null ? '-' : pct(s.ratio), deltaPP(s.ratio, p.ratio, false), s.nEst ? '예상 넣은 ' + s.nEst + '개 기준' : '예상 시간을 넣으면 계산돼요');
+    kpi('예상 시간 안에 끝냄', s.inTimeRate === null ? '-' : pct(s.inTimeRate), deltaPP(s.inTimeRate, p.inTimeRate, true));
+    kpi('마감 지킨 비율', s.onTimeRate === null ? '-' : pct(s.onTimeRate), deltaPP(s.onTimeRate, p.onTimeRate, true), s.nDue ? s.nDue + '개 중' : '');
+
+    // 그룹별 시간 (log 기준) + 예상 대비
+    var g = {};
+    state.todos.forEach(function (t) {
+      var gr = groupOf(t);
+      (t.log || []).forEach(function (l) {
+        if (l.date.indexOf(mk) !== 0) return;
+        var x = g[gr.key] = g[gr.key] || { name: gr.name, color: gr.color, min: 0, ids: {}, est: 0, act: 0, nEst: 0 };
+        x.min += l.min; x.ids[t.id] = true;
+      });
+    });
+    s.timed.forEach(function (t) {
+      if (!t.estMin) return;
+      var gr = groupOf(t);
+      var x = g[gr.key] = g[gr.key] || { name: gr.name, color: gr.color, min: 0, ids: {}, est: 0, act: 0, nEst: 0 };
+      x.est += t.estMin; x.act += t.spentMin; x.nEst++;
+    });
+    var rows = Object.keys(g).map(function (key) { return g[key]; });
+    var timeRows = rows.filter(function (r) { return r.min >= 1; }).sort(function (a, b) { return b.min - a.min; });
+    var bars = $('rBars'); bars.innerHTML = '';
+    if (!timeRows.length) bars.appendChild(el('div', 'empty', '기록된 시간이 없어요'));
+    var max = timeRows.length ? timeRows[0].min : 1;
+    timeRows.forEach(function (r) {
+      var n = Object.keys(r.ids).length;
+      var row = el('div', 'bar');
+      var lab = el('span', 'lab'); var dt = el('i', 'dot'); dt.style.background = r.color; dt.style.marginRight = '6px';
+      lab.appendChild(dt); lab.appendChild(document.createTextNode(r.name)); row.appendChild(lab);
+      var tr = el('div', 'track'); var f = el('div', 'fill'); var w2 = r.min / max * 70;
+      f.style.width = w2 + '%';
+      var v = el('span', 'val', fmtMin(r.min) + ' · ' + n + '개 · 평균 ' + fmtMin(r.min / n));
+      v.style.left = 'calc(' + w2 + '% + 6px)';
+      tr.title = r.name + ': ' + fmtMin(r.min) + ', ' + n + '개';
+      tr.appendChild(f); tr.appendChild(v); row.appendChild(tr);
+      bars.appendChild(row);
+    });
+
+    var gt = $('rGroups'); gt.innerHTML = '';
+    var estRows = rows.filter(function (r) { return r.nEst; }).sort(function (a, b) { return b.act / b.est - a.act / a.est; });
+    if (!estRows.length) gt.innerHTML = '<tr><td class="empty">예상 시간을 넣고 끝낸 일이 없어요</td></tr>';
+    else {
+      gt.innerHTML = '<tr><th>그룹</th><th>개수</th><th>예상 합계</th><th>실제 합계</th><th>실제/예상</th></tr>';
+      estRows.forEach(function (r) {
+        var tr = document.createElement('tr');
+        [r.name, r.nEst + '개', fmtMin(r.est), fmtMin(r.act), pct(r.act / r.est)].forEach(function (c, i) {
+          var td = el('td', '', c); if (i === 4) td.className = r.act > r.est ? 'down' : 'up'; tr.appendChild(td);
+        });
+        gt.appendChild(tr);
+      });
+    }
+
+    var rt = $('rRepeat'); rt.innerHTML = '';
+    if (!rep.length) rt.innerHTML = '<tr><td class="empty">이전 달에도 했던 일을 이번 달에 다시 하면 여기에 나와요</td></tr>';
+    else {
+      rt.innerHTML = '<tr><th>일</th><th>이번 달</th><th>그 전</th><th>변화</th></tr>';
+      rep.forEach(function (r) {
+        var tr = document.createElement('tr');
+        [r.name + (r.n > 1 ? ' ×' + r.n : ''), fmtMin(r.cur), fmtMin(r.prev), (r.change >= 0 ? '▼ ' + pct(r.change) + ' 빨라짐' : '▲ ' + pct(-r.change) + ' 늘어남')].forEach(function (c, i) {
+          var td = el('td', '', c); if (i === 3) td.className = r.change >= 0 ? 'up' : 'down'; tr.appendChild(td);
+        });
+        rt.appendChild(tr);
+      });
+    }
+
+    // 인사이트 문장
+    var ins = [];
+    if (timeRows.length) {
+      var top = timeRows[0], total = timeRows.reduce(function (a, r) { return a + r.min; }, 0);
+      ins.push('시간을 가장 많이 쓴 곳: ' + top.name + ' (전체의 ' + pct(top.min / total) + ', ' + fmtMin(top.min) + ')');
+    }
+    var worst = estRows.filter(function (r) { return r.act > r.est * 1.1; })[0];
+    if (worst) ins.push(worst.name + ' 일은 예상보다 ' + pct(worst.act / worst.est - 1) + ' 더 걸려요. 다음엔 예상 시간을 넉넉히 잡아 보세요.');
+    var best = estRows.filter(function (r) { return r.act <= r.est; }).slice(-1)[0];
+    if (best) ins.push(best.name + ' 일은 예상 시간 안에 끝내고 있어요 👍');
+    if (s.ratio !== null && p.ratio !== null) {
+      var diff = Math.round((p.ratio - s.ratio) * 100);
+      if (diff > 0) ins.push('예상 대비 실제 시간이 지난달보다 ' + diff + '%p 줄었어요. 계획이 점점 정확해지고 있어요.');
+      else if (diff < 0) ins.push('예상 대비 실제 시간이 지난달보다 ' + (-diff) + '%p 늘었어요.');
+    }
+    var fast = rep.filter(function (r) { return r.change > 0.05; })[0];
+    if (fast) ins.push('"' + fast.name + '" 예전 평균 ' + fmtMin(fast.prev) + ' → 이번 달 ' + fmtMin(fast.cur) + ', 빨라졌어요.');
+    if (s.onTimeRate !== null && s.onTimeRate < 0.7) ins.push('마감을 지킨 비율이 ' + pct(s.onTimeRate) + '예요. 마감 미리 알림을 더 일찍(2일 전) 켜 보세요.');
+    var noEst = s.timed.filter(function (t) { return !t.estMin; }).length;
+    if (noEst && s.timed.length) ins.push('완료한 일 중 ' + noEst + '개는 예상 시간이 없어요. 예상을 적어야 "예상 대비" 분석이 정확해져요.');
+    var ul = $('rInsights'); ul.innerHTML = '';
+    if (!ins.length) ins.push('이 달에는 분석할 기록이 아직 없어요.');
+    ins.forEach(function (x) { ul.appendChild(el('li', '', x)); });
+  }
+
+  // ---------- 설정 ----------
+  function renderPerm() {
+    var t;
+    if (!('Notification' in window)) t = '이 브라우저는 알림을 지원하지 않아요 (화면 안 알림과 소리는 돼요)';
+    else if (Notification.permission === 'granted') t = state.settings.notify ? '✅ 알림 켜짐' : '알림 꺼짐';
+    else if (Notification.permission === 'denied') t = '⛔ 브라우저에서 알림이 차단돼 있어요. 주소창 왼쪽 자물쇠에서 허용해 주세요.';
+    else t = '알림 꺼짐';
+    $('permText').textContent = t;
+    $('askPerm').textContent = state.settings.notify && 'Notification' in window && Notification.permission === 'granted' ? '알림 끄기' : '알림 켜기';
+  }
+  function askPermission() {
+    if (!('Notification' in window)) { renderPerm(); return; }
+    if (state.settings.notify && Notification.permission === 'granted') { state.settings.notify = false; save(); renderPerm(); return; }
+    Notification.requestPermission().then(function (p) {
+      state.settings.notify = p === 'granted'; save(); renderPerm();
+      if (p === 'granted') toast('🔔 알림을 켰어요', '마감 전과 작업 시간이 다 되어 갈 때 알려드릴게요.');
+    });
+  }
+  function renderSettings() {
+    renderPerm();
+    Array.prototype.forEach.call(document.querySelectorAll('.off'), function (c) { c.checked = state.settings.offsets.indexOf(+c.value) >= 0; });
+    $('sDueTime').value = state.settings.dueTime;
+    $('sWarn').value = state.settings.warnMin;
+    $('sSound').checked = !!state.settings.sound;
+    var rows = $('clientRows'); rows.innerHTML = '';
+    if (!state.clients.length) rows.appendChild(el('p', 'sub', '아직 광고주가 없어요. 아래에서 추가하거나, 할 일의 광고주 칸에서 "+ 새 광고주"를 고르세요.'));
+    state.clients.forEach(function (c) {
+      var r = el('div', 'clientrow');
+      var col = el('input'); col.type = 'color'; col.value = c.color; col.setAttribute('aria-label', c.name + ' 색상');
+      col.onchange = function () { c.color = col.value; save(); renderAll(); };
+      var nm = el('input', 'field'); nm.value = c.name; nm.maxLength = 30; nm.setAttribute('aria-label', '광고주 이름');
+      nm.onchange = function () { c.name = nm.value.trim() || c.name; save(); renderAll(); renderSettings(); };
+      var del = el('button', 'x', '×'); del.type = 'button'; del.setAttribute('aria-label', c.name + ' 삭제');
+      del.onclick = function () {
+        var used = state.todos.filter(function (t) { return t.client === c.id; }).length;
+        if (used && del.dataset.armed !== '1') { del.dataset.armed = '1'; del.textContent = used + '개는 광고주 없음으로 바뀜. 한 번 더 누르면 삭제'; del.style.fontSize = '12px'; return; }
+        state.todos.forEach(function (t) { if (t.client === c.id) t.client = ''; });
+        state.clients = state.clients.filter(function (x) { return x !== c; });
+        save(); renderAll(); renderSettings();
+      };
+      r.appendChild(col); r.appendChild(nm); r.appendChild(del); rows.appendChild(r);
+    });
+  }
+  $('openSettings').onclick = function () { renderSettings(); $('settings').hidden = false; };
+  $('closeSettings').onclick = function () { $('settings').hidden = true; };
+  $('settings').onclick = function (e) { if (e.target === $('settings')) $('settings').hidden = true; };
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') $('settings').hidden = true; });
+  $('askPerm').onclick = askPermission;
+  $('testNotify').onclick = function () {
+    toast('🔔 테스트 알림', '이렇게 화면 오른쪽 아래와 (켜 두면) 컴퓨터 알림으로 와요.');
+    beep();
+    if (state.settings.notify && 'Notification' in window && Notification.permission === 'granted') {
+      try { new Notification('🔔 테스트 알림', { body: '클로이의 TO DO LIST 알림이에요.', icon: 'chipmunk-192.png' }); } catch (e) {}
+    }
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('.off'), function (c) {
+    c.onchange = function () {
+      state.settings.offsets = Array.prototype.filter.call(document.querySelectorAll('.off'), function (x) { return x.checked; }).map(function (x) { return +x.value; });
+      save();
+    };
+  });
+  $('sDueTime').onchange = function () { state.settings.dueTime = $('sDueTime').value || '18:00'; save(); renderAll(); };
+  $('sWarn').onchange = function () { state.settings.warnMin = Math.min(60, Math.max(1, parseInt($('sWarn').value, 10) || 5)); save(); };
+  $('sSound').onchange = function () { state.settings.sound = $('sSound').checked; save(); };
+  $('clientForm').onsubmit = function (e) {
+    e.preventDefault();
+    var name = $('newClientName').value.trim(); if (!name) return;
+    state.clients.push({ id: uid(), name: name, color: $('newClientColor').value });
+    $('newClientName').value = '';
+    $('newClientColor').value = CLIENT_COLORS[state.clients.length % CLIENT_COLORS.length];
+    save(); renderAll(); renderSettings();
+  };
+
+  // ---------- 명언 ----------
   var QUOTES = [
     ["천재는 1%의 영감과 99%의 노력으로 이루어진다.", "토머스 에디슨"],
     ["나는 실패한 것이 아니다. 효과가 없는 1만 가지 방법을 발견했을 뿐이다.", "토머스 에디슨"],
@@ -275,246 +1090,65 @@
     ["인생은 가까이서 보면 비극이지만, 멀리서 보면 희극이다.", "찰리 채플린"],
     ["나는 피와 노고와 눈물과 땀밖에 바칠 것이 없습니다.", "윈스턴 처칠"]
   ];
-
-  // 앱을 열 때마다 무작위로 하나 고르고, 직전에 본 것은 피함
   function pickQuote(avoid) {
     var n = Math.floor(Math.random() * QUOTES.length);
     if (n === avoid) n = (n + 1) % QUOTES.length;
     try { localStorage.setItem('todo-last-quote', String(n)); } catch (e) {}
     return n;
   }
-  var quoteIdx = (function () {
-    var last = -1;
-    try { last = parseInt(localStorage.getItem('todo-last-quote'), 10); } catch (e) {}
-    return pickQuote(last);
-  })();
-
+  var quoteIdx = pickQuote((function () { try { return parseInt(localStorage.getItem('todo-last-quote'), 10); } catch (e) { return -1; } })());
   function renderQuote() {
-    var item = QUOTES[quoteIdx];
-    $('qLabel').textContent = '오늘의 한마디';
-    $('qText').textContent = '\u201c' + item[0] + '\u201d';
-    $('qBy').textContent = '\u2014 ' + item[1];
+    $('qText').textContent = '“' + QUOTES[quoteIdx][0] + '”';
+    $('qBy').textContent = '오늘의 한마디 · ' + QUOTES[quoteIdx][1];
   }
+  $('quote').onclick = function () { quoteIdx = pickQuote(quoteIdx); renderQuote(); };
 
-  function setDetails(open) {
-    $('details').hidden = !open;
-    $('addBtn').hidden = !open;
-    if (open && arguments[1]) $('input').focus();
-    $('detailBtn').textContent = open ? '접기' : '자세히 보기';
-    $('detailBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+  // ---------- 이벤트 ----------
+  function renderAll() {
+    fillFilter();
+    if (view === 'cal') { renderCal(); renderList(); } else renderReport();
+    tick();
   }
-
-  function selectDate(key) {
-    dateFilter = (dateFilter === key) ? '' : key;
-    $('due').value = dateFilter;
-    if (dateFilter) setDetails(true);
-    renderTodos();
-  }
-
-  function renderGrid() {
-    $('calTitle').textContent = '\uD83D\uDCC5 ' + viewY + '년 ' + (viewM + 1) + '월';
-    var grid = $('grid');
-    grid.innerHTML = '';
-    DOW.forEach(function (d) {
-      var el = document.createElement('div');
-      el.className = 'dow'; el.textContent = d;
-      grid.appendChild(el);
-    });
-
-    var first = new Date(viewY, viewM, 1).getDay();
-    var days = new Date(viewY, viewM + 1, 0).getDate();
-    for (var i = 0; i < first; i++) {
-      var b = document.createElement('div'); b.className = 'day blank'; grid.appendChild(b);
-    }
-    for (var d = 1; d <= days; d++) {
-      (function (d) {
-        var key = ymd(viewY, viewM, d);
-        var cell = document.createElement('button');
-        cell.type = 'button';
-        cell.className = 'day' + ((first + d - 1) % 7 === 0 ? ' sun' : '') +
-          (key === today() ? ' today' : '') + (key === dateFilter ? ' sel' : '');
-        cell.setAttribute('aria-label', key);
-
-        var num = document.createElement('span');
-        num.className = 'num'; num.textContent = d;
-        cell.appendChild(num);
-
-        var all = state.todos.filter(function (t) { return t.due === key; })
-          .map(function (t) { return { color: catById(t.cat || '').color, done: t.done }; });
-        var dots = document.createElement('div');
-        dots.className = 'dots';
-        all.slice(0, 4).forEach(function (x) {
-          var dot = document.createElement('span');
-          dot.className = 'dot' + (x.done ? ' done' : '');
-          dot.style.background = x.color;
-          dots.appendChild(dot);
-        });
-        cell.appendChild(dots);
-        if (all.length > 4) {
-          var more = document.createElement('span');
-          more.className = 'more'; more.textContent = '+' + (all.length - 4);
-          cell.appendChild(more);
-        }
-        cell.onclick = function () { selectDate(key); };
-        grid.appendChild(cell);
-      })(d);
-    }
-
-    var lg = $('legend');
-    lg.innerHTML = '';
-    var item = function (color, label) {
-      var sp = document.createElement('span');
-      var dot = document.createElement('i');
-      dot.className = 'dot';
-      dot.style.background = color;
-      sp.appendChild(dot); sp.appendChild(document.createTextNode(label));
-      lg.appendChild(sp);
+  Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
+    b.onclick = function () {
+      view = b.dataset.view;
+      Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (x) { x.className = 'tab' + (x === b ? ' on' : ''); });
+      $('viewCal').hidden = view !== 'cal'; $('viewReport').hidden = view !== 'report';
+      renderAll();
     };
-    state.cats.forEach(function (c) { item(c.color, c.name); });
-  }
+  });
+  $('viewFilter').onchange = function () { calFilter = $('viewFilter').value; renderAll(); };
+  $('prev').onclick = function () { viewM--; if (viewM < 0) { viewM = 11; viewY--; } renderCal(); };
+  $('next').onclick = function () { viewM++; if (viewM > 11) { viewM = 0; viewY++; } renderCal(); };
+  $('todayBtn').onclick = function () { var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth(); sel = today(); scope = 'day'; renderAll(); };
+  $('rPrev').onclick = function () { rM--; if (rM < 0) { rM = 11; rY--; } renderReport(); };
+  $('rNext').onclick = function () { rM++; if (rM > 11) { rM = 0; rY++; } renderReport(); };
+  $('scope').onclick = function (e) { if (e.target.dataset.s) { scope = e.target.dataset.s; renderList(); } };
+  $('status').onclick = function (e) { if (e.target.dataset.f) { status = e.target.dataset.f; renderList(); } };
+  $('clearDone').onclick = function () { state.todos = state.todos.filter(function (t) { return !t.done; }); save(); renderAll(); };
+  $('runStop').onclick = function () { stopTimer(); renderAll(); };
+  $('runDone').onclick = function () { var t = state.active && byId(state.active.id); if (t) completeTask(t); };
 
-  function renderTodos() {
-    var todos = dateFilter ? state.todos.filter(function (t) { return t.due === dateFilter; }) : state.todos;
-    var left = todos.filter(function (t) { return !t.done; }).length;
-    var when = dateFilter ? (+dateFilter.split('-')[1]) + '월 ' + (+dateFilter.split('-')[2]) + '일 · ' : '';
-    $('count').textContent = todos.length
-      ? when + '남은 할 일 ' + left + '개 / 전체 ' + todos.length + '개'
-      : (dateFilter ? when + '마감인 할 일이 없어요' : '아직 할 일이 없어요');
-
-    var shown = sorted(todos).filter(function (t) {
-      return (filter === 'all' || (filter === 'done') === t.done) &&
-             (!dateFilter || t.due === dateFilter);
-    });
-
-    var ul = $('list');
-    ul.innerHTML = '';
-    if (!shown.length) {
-      var empty = document.createElement('div');
-      empty.className = 'empty';
-      empty.textContent = '표시할 항목이 없어요';
-      ul.appendChild(empty);
-    }
-    shown.forEach(function (t) {
-      var li = document.createElement('li');
-      if (t.done) li.className = 'done';
-
-      var cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.checked = t.done;
-      cb.setAttribute('aria-label', '완료 표시');
-      cb.onchange = function () { t.done = cb.checked; save(); renderTodos(); };
-
-      var body = document.createElement('div');
-      body.className = 'body';
-      var text = document.createElement('div');
-      text.className = 'text';
-      text.textContent = t.text;
-      var meta = document.createElement('div');
-      meta.className = 'meta';
-
-      var p = t.prio || 'mid';
-      var badge = document.createElement('select');
-      badge.className = 'badge p-' + p;
-      badge.setAttribute('aria-label', '우선순위 변경');
-      Object.keys(PRIO).forEach(function (k) {
-        var o = document.createElement('option');
-        o.value = k; o.textContent = PRIO[k][0];
-        badge.appendChild(o);
-      });
-      badge.value = p;
-      badge.onchange = function () { t.prio = badge.value; save(); renderTodos(); };
-      meta.appendChild(badge);
-
-      var cat = document.createElement('select');
-      cat.className = 'cat';
-      cat.setAttribute('aria-label', '카테고리 변경');
-      fillSelect(cat, false, true, t.cat || '');
-      cat.style.background = catById(t.cat || '').color;
-      cat.onchange = function () { t.cat = cat.value; save(); renderTodos(); };
-      meta.appendChild(cat);
-
-      if (t.due) {
-        var due = document.createElement('span');
-        var late = !t.done && t.due < today();
-        due.textContent = '마감 ' + t.due + (late ? ' (지남)' : '');
-        if (late) due.className = 'overdue';
-        meta.appendChild(due);
-      }
-      body.appendChild(text); body.appendChild(meta);
-
-      var del = document.createElement('button');
-      del.className = 'icon';
-      del.type = 'button';
-      del.textContent = '×';
-      del.setAttribute('aria-label', '삭제');
-      del.onclick = function () {
-        state.todos = state.todos.filter(function (x) { return x !== t; });
-        save(); renderTodos();
-      };
-
-      li.appendChild(cb); li.appendChild(body); li.appendChild(del);
-      ul.appendChild(li);
-    });
-
-    Array.prototype.forEach.call($('filters').children, function (b) {
-      b.className = b.dataset.f === filter ? 'on' : '';
-    });
-
-    $('dateBar').hidden = !dateFilter;
-    if (dateFilter) {
-      var q = dateFilter.split('-');
-      $('dateBarText').textContent = (+q[1]) + '월 ' + (+q[2]) + '일 마감만 보는 중';
-    }
-    renderGrid();
-    renderQuote();
-  }
-
-  $('form').onsubmit = function (e) {
-    e.preventDefault();
-    var text = $('input').value.trim();
-    if (!text) return;
-    state.todos.push({ id: uid(), text: text, done: false, prio: $('prio').value, cat: $('cat').value, due: $('due').value });
-    $('input').value = '';
-    $('due').value = dateFilter;
-    save(); renderTodos();
-  };
-
-  $('filters').onclick = function (e) {
-    if (e.target.dataset.f) { filter = e.target.dataset.f; renderTodos(); }
-  };
-
-  $('detailBtn').onclick = function () { setDetails($('details').hidden, true); };
-
-  $('prev').onclick = function () { viewM--; if (viewM < 0) { viewM = 11; viewY--; } renderGrid(); };
-  $('next').onclick = function () { viewM++; if (viewM > 11) { viewM = 0; viewY++; } renderGrid(); };
-  $('todayBtn').onclick = function () {
-    var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth(); renderGrid();
-  };
-  $('dateClear').onclick = function () { dateFilter = ''; $('due').value = ''; renderTodos(); };
-
-  $('clear').onclick = function () {
-    state.todos = state.todos.filter(function (t) { return !t.done; });
-    save(); renderTodos();
-  };
-
-  function newQuote() { quoteIdx = pickQuote(quoteIdx); renderQuote(); }
-  $('quoteCard').onclick = newQuote;
-  $('quoteCard').onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); newQuote(); } };
-
-  // 앱을 켜 둔 채 날짜가 바뀌면 새 날짜와 새 명언으로 갱신
+  // 날짜가 바뀐 뒤 돌아오면 오늘로
   var lastDay = today();
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden || lastDay === today()) return;
-    lastDay = today();
-    var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth();
-    dateFilter = lastDay; $('due').value = dateFilter;
-    quoteIdx = pickQuote(quoteIdx);
-    renderTodos();
+    if (document.hidden) return;
+    if (lastDay !== today()) {
+      lastDay = today(); sel = lastDay; scope = 'day';
+      var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth();
+      quoteIdx = pickQuote(quoteIdx); renderQuote();
+    }
+    renderAll(); checkDeadlines();
   });
 
-  $('due').value = dateFilter;
-  renderCatControls();
-  renderTodos();
+  fillCatSelect($('fCat'), 'work');
+  fillClientSelect($('fClient'), '');
+  syncFormClient();
+  renderQuote();
+  renderAll();
+  checkDeadlines();
+  setInterval(tick, 1000);
+  setInterval(function () { checkDeadlines(); if (view === 'cal' && state.active) renderList(); }, 30000);
 </script>
 </body>
 </html>
