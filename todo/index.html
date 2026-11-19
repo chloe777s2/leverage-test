@@ -497,7 +497,7 @@
       due.forEach(function (o) { t.notified[o] = true; });
       changed = true;
       var left = (at - now) / 60000;
-      notify('📅 마감 ' + (left >= 1440 ? Math.round(left / 1440) + '일' : fmtMin(left)) + ' 전', t.text + ' · ' + md(t.due) + (t.dueTime ? ' ' + t.dueTime : ''),
+      notify('📅 ' + t.text + ' · 마감 ' + (left >= 1440 ? Math.round(left / 1440) + '일' : fmtMin(left)) + ' 전', '',
         [['지금 시작', function () { startTimer(t); }, true], ['닫기', function () {}]], true);
     });
     if (changed) save();
