@@ -48,9 +48,10 @@
   .iconbtn:hover, .tab:hover{border-color:var(--accent)}
 
   /* 실행 중 타이머 바 */
-  .runbar{position:sticky; top:env(safe-area-inset-top, 0px); z-index:5; display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px;
+  .runbars{position:sticky; top:env(safe-area-inset-top, 0px); z-index:5; display:flex; flex-direction:column; gap:6px}
+  .runbars:empty{display:none}
+  .runbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px;
     background:var(--ink); color:#fff; border-radius:14px; padding:10px 16px}
-  .runbar[hidden]{display:none}
   .runbar .name{font-size:17px; font-weight:700; min-width:0; overflow-wrap:anywhere}
   .runbar .clock{font-size:22px; font-variant-numeric:tabular-nums}
   .runbar .meter{flex:1 1 160px; height:8px; background:rgba(255,255,255,.25); border-radius:999px; overflow:hidden}
@@ -123,7 +124,8 @@
   .task.running{background:var(--soft); border-radius:10px}
   .meta{display:flex; flex-wrap:wrap; gap:5px; align-items:center; margin-top:3px; font-size:12px; color:var(--muted)}
   select.pill{border:0; border-radius:999px; color:#fff; font-size:11px; font-weight:700; padding:1px 4px; cursor:pointer; max-width:9em}
-  select.pill.neutral{background:#efe9ec; color:var(--ink)}
+  select.pill.neutral{-webkit-appearance:none; appearance:none; color:#a8979f; padding:1px 18px 1px 8px;
+    background:#efe9ec url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' fill='none' stroke='%23a8979f' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 6px center}
   select.pill option{color:var(--ink); background:#fff}
   .p-high{background:var(--high)} .p-mid{background:var(--mid)} .p-low{background:var(--low)}
   .overdue{color:var(--high); font-weight:700}
@@ -222,14 +224,7 @@
     </div>
   </header>
 
-  <div class="runbar" id="runbar" hidden>
-    <span class="name" id="runName"></span>
-    <span class="clock" id="runClock">0:00</span>
-    <span class="meter" id="runMeter"><i id="runFill" style="width:0"></i></span>
-    <span class="hint" id="runHint"></span>
-    <button class="stop" type="button" id="runStop">⏸ 멈춤</button>
-    <button class="done" type="button" id="runDone">✔ 완료</button>
-  </div>
+  <div class="runbars" id="runbars"></div>
 
   <!-- 캘린더 화면 -->
   <section class="main" id="viewCal">
@@ -356,7 +351,7 @@
   var PRIO = { high: ['높음', 0], mid: ['보통', 1], low: ['낮음', 2] };
   var DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
-  var state = { todos: [], missed: [], cats: DEFAULT_CATS, clients: [], settings: {}, active: null, memos: {} };
+  var state = { todos: [], missed: [], cats: DEFAULT_CATS, clients: [], settings: {}, actives: [], memos: {} };
   try {
     var raw = JSON.parse(localStorage.getItem(KEY));
     if (Array.isArray(raw)) state.todos = raw;
@@ -366,7 +361,7 @@
       state.cats = raw.cats || DEFAULT_CATS;
       state.clients = raw.clients || [];
       state.settings = raw.settings || {};
-      state.active = raw.active || null;
+      state.actives = raw.actives || (raw.active ? [raw.active] : []);  // 예전 버전은 타이머 1개
       state.memos = raw.memos || {};
     }
   } catch (e) {}
@@ -420,7 +415,8 @@
   // ---------- 시간 계산 ----------
   function elapsedMin(t) {
     var m = t.spentMin || 0;
-    if (state.active && state.active.id === t.id) m += (Date.now() - state.active.start) / 60000;
+    var a = activeOf(t.id);
+    if (a) m += (Date.now() - a.start) / 60000;
     return m;
   }
   // 평소 걸린 시간: 같은 이름 > 같은 광고주 > 같은 카테고리 순으로 완료 기록의 평균
@@ -515,29 +511,32 @@
     if (changed) save();
   }
 
-  // ---------- 타이머 ----------
+  // ---------- 타이머 (여러 개 동시에 가능) ----------
+  function activeOf(id) {
+    for (var i = 0; i < state.actives.length; i++) if (state.actives[i].id === id) return state.actives[i];
+    return null;
+  }
   function startTimer(t) {
-    if (state.active && state.active.id === t.id) return;
-    if (state.active) stopTimer();
-    state.active = { id: t.id, start: Date.now(), extra: 0, warned: false, over: false };
+    if (activeOf(t.id)) return;
+    state.actives.push({ id: t.id, start: Date.now(), extra: 0, warned: false, over: false });
     if (!state.settings.notify && 'Notification' in window && Notification.permission === 'default') {
       toast('🔔 알림을 켜 두면 좋아요', '시간이 다 되어 갈 때 다른 창을 보고 있어도 알려드려요.', [['알림 켜기', askPermission, true]]);
     }
     save(); renderAll();
   }
-  function stopTimer() {
-    var a = state.active; if (!a) return;
-    var t = byId(a.id);
+  function stopTimer(id) {
+    var a = activeOf(id); if (!a) return;
+    var t = byId(id);
     if (t) {
       var add = (Date.now() - a.start) / 60000;
       t.spentMin = (t.spentMin || 0) + add;
       t.log.push({ date: today(), min: Math.round(add * 10) / 10 });
     }
-    state.active = null;
+    state.actives = state.actives.filter(function (x) { return x !== a; });
     save();
   }
   function completeTask(t) {
-    if (state.active && state.active.id === t.id) stopTimer();
+    if (activeOf(t.id)) stopTimer(t.id);
     t.done = true; t.doneAt = today();
     var exp = expectedMin(t);
     if (t.spentMin >= 1) {
@@ -592,22 +591,41 @@
   }
   function byId(id) { for (var i = 0; i < state.todos.length; i++) if (state.todos[i].id === id) return state.todos[i]; return null; }
 
+  var runEls = {}, runKey = '';
+  function renderRunbars() {
+    var box = $('runbars'); box.innerHTML = ''; runEls = {};
+    state.actives.forEach(function (a) {
+      var row = el('div', 'runbar');
+      var r = { name: el('span', 'name'), clock: el('span', 'clock', '0:00'), meter: el('span', 'meter'), fill: el('i'), hint: el('span', 'hint') };
+      r.meter.appendChild(r.fill);
+      var stop = el('button', 'stop', '⏸ 멈춤'); stop.type = 'button';
+      stop.onclick = function () { stopTimer(a.id); renderAll(); };
+      var done = el('button', 'done', '✔ 완료'); done.type = 'button';
+      done.onclick = function () { var t = byId(a.id); if (t) completeTask(t); };
+      [r.name, r.clock, r.meter, r.hint, stop, done].forEach(function (x) { row.appendChild(x); });
+      box.appendChild(row);
+      runEls[a.id] = r;
+    });
+    runKey = state.actives.map(function (a) { return a.id; }).join(',');
+  }
   function tick() {
-    var a = state.active;
-    if (!a) { $('runbar').hidden = true; return; }
-    var t = byId(a.id);
-    if (!t) { state.active = null; save(); $('runbar').hidden = true; return; }
-    $('runbar').hidden = false;
-    var el2 = elapsedMin(t), exp = expectedMin(t);
-    $('runName').textContent = '⏱ ' + t.text;
-    $('runClock').textContent = fmtClock(el2 * 60);
-    if (exp) {
+    state.actives = state.actives.filter(function (a) { return byId(a.id); });
+    if (state.actives.map(function (a) { return a.id; }).join(',') !== runKey) renderRunbars();
+    state.actives.forEach(function (a) {
+      var t = byId(a.id), r = runEls[a.id];
+      var el2 = elapsedMin(t), exp = expectedMin(t);
+      r.name.textContent = '⏱ ' + t.text;
+      r.clock.textContent = fmtClock(el2 * 60);
+      if (!exp) {
+        r.fill.style.width = '0';
+        r.hint.textContent = '평소 기록이 없어요. 끝나면 이 시간이 기준이 돼요.';
+        return;
+      }
       var target = exp + (a.extra || 0);
-      var pct = Math.min(100, el2 / target * 100);
-      $('runFill').style.width = pct + '%';
-      $('runMeter').className = 'meter' + (el2 > target ? ' over' : '');
+      r.fill.style.width = Math.min(100, el2 / target * 100) + '%';
+      r.meter.className = 'meter' + (el2 > target ? ' over' : '');
       var left = target - el2;
-      $('runHint').textContent = left >= 0 ? '평소 ' + fmtMin(exp) + ' · ' + Math.ceil(left) + '분 남음' : '평소보다 ' + Math.ceil(-left) + '분 넘음';
+      r.hint.textContent = left >= 0 ? '평소 ' + fmtMin(exp) + ' · ' + Math.ceil(left) + '분 남음' : '평소보다 ' + Math.ceil(-left) + '분 넘음';
       if (!a.warned && left <= state.settings.warnMin && left > 0) {
         a.warned = true; save();
         notify('⏰ ' + Math.ceil(left) + '분 남았어요', '"' + t.text + '" 평소 ' + fmtMin(exp) + ' 걸리던 일이에요. 마무리해 볼까요?', [['확인', function () {}, true]], true);
@@ -616,19 +634,16 @@
         a.over = true; save();
         notify('⌛ 평소 시간이 다 됐어요', '"' + t.text + '" 다 끝났나요?', [
           ['다 했어요', function () { completeTask(t); }, true],
-          ['10분 더', function () { if (state.active) { state.active.extra = (state.active.extra || 0) + 10; state.active.over = false; state.active.warned = false; save(); } }],
+          ['10분 더', function () { var x = activeOf(t.id); if (x) { x.extra = (x.extra || 0) + 10; x.over = false; x.warned = false; save(); } }],
           ['계속', function () {}]
         ], true);
       }
-    } else {
-      $('runFill').style.width = '0';
-      $('runHint').textContent = '평소 기록이 없어요. 끝나면 이 시간이 기준이 돼요.';
-    }
+    });
   }
 
   // ---------- 화면 상태 ----------
   var view = 'cal', status = 'all';
-  var catPick = '';                              // 범례에서 고른 카테고리/광고주 (비어 있으면 전체)
+  var catPicks = [];                             // 범례에서 고른 카테고리/광고주들 (비어 있으면 전체)
   var sel = today();
   var viewY = new Date().getFullYear(), viewM = new Date().getMonth();
   var rY = viewY, rM = viewM;
@@ -666,30 +681,33 @@
       grid.appendChild(cell);
     }
     var lg = $('legend'); lg.innerHTML = '';
-    lg.className = 'legend' + (catPick ? ' filtering' : '');
+    lg.className = 'legend' + (catPicks.length ? ' filtering' : '');
     var item = function (key, color, label) {
       var b = el('button'); b.type = 'button';
-      b.className = catPick === key ? 'on' : '';
-      b.setAttribute('aria-pressed', catPick === key ? 'true' : 'false');
-      b.title = catPick === key ? '다시 누르면 전체 보기' : label + '만 보기';
+      var on = catPicks.indexOf(key) >= 0;
+      b.className = on ? 'on' : '';
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.title = on ? '다시 누르면 빼기' : label + ' 같이 보기';
       var dt = el('i', 'dot'); dt.style.background = color;
       b.appendChild(dt); b.appendChild(document.createTextNode(label));
-      b.onclick = function () { catPick = catPick === key ? '' : key; renderCal(); };
+      b.onclick = function () { var i = catPicks.indexOf(key); if (i >= 0) catPicks.splice(i, 1); else catPicks.push(key); renderCal(); };
       lg.appendChild(b);
     };
     state.cats.forEach(function (c) { item('k:' + c.id, c.color, c.name); });
     state.clients.forEach(function (c) { item('c:' + c.id, c.color, '업무/' + c.name); });
-    if (catPick) {
+    if (catPicks.length) {
       var clr = el('button', 'clear', '전체 보기'); clr.type = 'button';
-      clr.onclick = function () { catPick = ''; renderCal(); };
+      clr.onclick = function () { catPicks = []; renderCal(); };
       lg.appendChild(clr);
     }
   }
-  // 업무를 고르면 광고주 상관없이 업무 전부, 광고주를 고르면 그 광고주만
+  // 여러 개 고를 수 있음. 업무를 고르면 광고주 상관없이 업무 전부, 광고주를 고르면 그 광고주만
   function picked(t) {
-    if (!catPick) return true;
-    if (catPick.indexOf('k:') === 0) return t.cat === catPick.slice(2);
-    return t.cat === 'work' && t.client === catPick.slice(2);
+    if (!catPicks.length) return true;
+    return catPicks.some(function (k) {
+      if (k.indexOf('k:') === 0) return t.cat === k.slice(2);
+      return t.cat === 'work' && t.client === k.slice(2);
+    });
   }
 
   function sortTasks(list) {
@@ -733,7 +751,7 @@
     var ul = $('list'); ul.innerHTML = '';
     if (!shown.length) ul.appendChild(el('div', 'empty', '이 날 할 일이 없어요. 위에서 추가해 보세요.'));
     shown.forEach(function (t) {
-      var running = state.active && state.active.id === t.id;
+      var running = !!activeOf(t.id);
       var li = el('li', 'task' + (t.done ? ' done' : '') + (running ? ' running' : ''));
 
       var cb = el('input'); cb.type = 'checkbox'; cb.checked = !!t.done; cb.setAttribute('aria-label', '완료 표시');
@@ -776,20 +794,20 @@
       }
       if (t.due) {
         var late = !t.done && dueAt(t) < Date.now();
-        meta.appendChild(el('span', late ? 'overdue' : '', (t.dueTime || '') + (late ? ' 마감 지남' : t.dueTime ? ' 마감' : '')));
+        meta.appendChild(el('span', late ? 'overdue' : '', (t.dueTime || '') + (late ? ' 지남' : t.dueTime ? ' 마감' : '')));
       }
       body.appendChild(meta);
 
       var del = el('button', 'x', '×'); del.type = 'button'; del.setAttribute('aria-label', '삭제');
       del.onclick = function () {
-        if (state.active && state.active.id === t.id) state.active = null;
+        state.actives = state.actives.filter(function (a) { return a.id !== t.id; });
         state.todos = state.todos.filter(function (x) { return x !== t; }); save(); renderAll();
       };
 
       var tr = el('div', 'timerow');
       if (!t.done) {
         var play = el('button', 'play' + (running ? ' on' : ''), running ? '⏸ 멈춤' : '▶ 시작'); play.type = 'button';
-        play.onclick = function () { if (running) { stopTimer(); renderAll(); } else startTimer(t); };
+        play.onclick = function () { if (running) { stopTimer(t.id); renderAll(); } else startTimer(t); };
         tr.appendChild(play);
       }
       var real = el('input'); real.type = 'number'; real.min = '0'; real.step = '1';
@@ -1113,8 +1131,6 @@
   $('rPrev').onclick = function () { rM--; if (rM < 0) { rM = 11; rY--; } renderReport(); };
   $('rNext').onclick = function () { rM++; if (rM > 11) { rM = 0; rY++; } renderReport(); };
   $('status').onclick = function (e) { if (e.target.dataset.f) { status = e.target.dataset.f; renderList(); } };
-  $('runStop').onclick = function () { stopTimer(); renderAll(); };
-  $('runDone').onclick = function () { var t = state.active && byId(state.active.id); if (t) completeTask(t); };
 
   // 날짜가 바뀐 뒤 돌아오면 오늘로
   var lastDay = today();
@@ -1136,7 +1152,7 @@
   setInterval(function () {
     checkDeadlines();
     var editing = document.activeElement && $('viewCal').contains(document.activeElement) && document.activeElement !== document.body;
-    if (view === 'cal' && state.active && !editing) renderList();
+    if (view === 'cal' && state.actives.length && !editing) renderList();
   }, 30000);
 </script>
 </body>
