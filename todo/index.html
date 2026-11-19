@@ -94,6 +94,10 @@
   .dot{display:inline-block; width:9px; height:9px; border-radius:50%}
 
   /* 오른쪽 패널 */
+  .leftcol{display:flex; flex-direction:column; gap:14px; min-width:0}
+  .memo-area{display:block; min-height:170px; resize:vertical; margin-top:10px; font-size:15px; line-height:1.6}
+  .day .num.hasmemo::after{content:""; display:inline-block; width:6px; height:6px; margin-left:4px; border-radius:50%; background:var(--ink); vertical-align:middle}
+  .day.today .num.hasmemo::after{background:#fff}
   .side{display:flex; flex-direction:column; gap:12px; position:sticky; top:12px}
   .dayhead{display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap}
   .seg{display:flex; gap:4px}
@@ -133,8 +137,6 @@
   .report[hidden], .main[hidden]{display:none}
   .rhead{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
   .rhead h2{font-size:24px; margin-right:auto}
-  .headline{font-size:22px; text-wrap:balance}
-  .headline small{display:block; font-size:13px; color:var(--muted)}
   .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px}
   .kpi{background:var(--soft); border-radius:14px; padding:12px 14px}
   .kpi .l{font-size:13px; color:var(--muted)}
@@ -216,6 +218,7 @@
 
   <!-- 캘린더 화면 -->
   <section class="main" id="viewCal">
+    <div class="leftcol">
     <div class="card">
       <div class="calhead">
         <h2 id="calTitle"></h2>
@@ -228,6 +231,11 @@
       </div>
       <div class="grid" id="grid"></div>
       <div class="legend" id="legend"></div>
+    </div>
+    <div class="card">
+      <div class="dayhead"><h2 id="memoTitle"></h2><span class="sub" id="memoSaved" aria-live="polite"></span></div>
+      <textarea class="field memo-area" id="memo" placeholder="이 날의 메모를 자유롭게 적어보세요. 자동으로 저장돼요."></textarea>
+    </div>
     </div>
 
     <aside class="side">
@@ -267,15 +275,12 @@
 
   <!-- 월간 리포트 -->
   <section class="report" id="viewReport" hidden>
-    <div class="card">
-      <div class="rhead">
-        <h2 id="rTitle"></h2>
-        <div class="nav">
-          <button type="button" id="rPrev" aria-label="이전 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L4 7l5 5"/></svg></button>
-          <button type="button" id="rNext" aria-label="다음 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2l5 5-5 5"/></svg></button>
-        </div>
+    <div class="rhead">
+      <h2 id="rTitle"></h2>
+      <div class="nav">
+        <button type="button" id="rPrev" aria-label="이전 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L4 7l5 5"/></svg></button>
+        <button type="button" id="rNext" aria-label="다음 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2l5 5-5 5"/></svg></button>
       </div>
-      <p class="headline" id="rHeadline" style="margin-top:8px"></p>
     </div>
     <div class="kpis" id="rKpis"></div>
     <div class="card">
@@ -293,11 +298,6 @@
         <p class="sub">같은 이름의 일: 이번 달 평균 vs 그 전 평균</p>
         <div class="scroll" style="margin-top:12px"><table class="tbl" id="rRepeat"></table></div>
       </div>
-    </div>
-    <div class="card">
-      <h2>🎯 예상 vs 실제 (그룹별)</h2>
-      <p class="sub">예상 시간을 넣은 일만 계산해요. 100%보다 크면 예상보다 오래 걸린 거예요.</p>
-      <div class="scroll" style="margin-top:12px"><table class="tbl" id="rGroups"></table></div>
     </div>
   </section>
 </div>
@@ -350,7 +350,7 @@
   var PRIO = { high: ['높음', 0], mid: ['보통', 1], low: ['낮음', 2] };
   var DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
-  var state = { todos: [], missed: [], cats: DEFAULT_CATS, clients: [], settings: {}, active: null };
+  var state = { todos: [], missed: [], cats: DEFAULT_CATS, clients: [], settings: {}, active: null, memos: {} };
   try {
     var raw = JSON.parse(localStorage.getItem(KEY));
     if (Array.isArray(raw)) state.todos = raw;
@@ -361,6 +361,7 @@
       state.clients = raw.clients || [];
       state.settings = raw.settings || {};
       state.active = raw.active || null;
+      state.memos = raw.memos || {};
     }
   } catch (e) {}
   Object.keys(DEFAULT_SETTINGS).forEach(function (k) { if (state.settings[k] === undefined) state.settings[k] = DEFAULT_SETTINGS[k]; });
@@ -597,7 +598,7 @@
     add(s, 'work', '업무 전체');
     if (state.clients.length) {
       var g = document.createElement('optgroup'); g.label = '광고주';
-      state.clients.forEach(function (c) { add(g, 'c:' + c.id, '업무 > ' + c.name); });
+      state.clients.forEach(function (c) { add(g, 'c:' + c.id, '업무/' + c.name); });
       s.appendChild(g);
     }
     var g2 = document.createElement('optgroup'); g2.label = '카테고리';
@@ -623,7 +624,7 @@
       cell.type = 'button';
       cell.setAttribute('aria-label', key);
       cell.dataset.key = key;
-      cell.appendChild(el('span', 'num', d.getDate()));
+      cell.appendChild(el('span', 'num' + (state.memos[key] ? ' hasmemo' : ''), d.getDate()));
       var items = (byDay[key] || []).slice().sort(function (a, b) { return (a.done - b.done) || (PRIO[a.prio][1] - PRIO[b.prio][1]); });
       var max = 4;
       items.slice(0, max).forEach(function (t) {
@@ -640,7 +641,8 @@
     var lg = $('legend'); lg.innerHTML = '';
     var item = function (color, label) { var sp = el('span'); var dt = el('i', 'dot'); dt.style.background = color; sp.appendChild(dt); sp.appendChild(document.createTextNode(label)); lg.appendChild(sp); };
     state.cats.forEach(function (c) { item(c.color, c.name); });
-    state.clients.forEach(function (c) { item(c.color, '업무 > ' + c.name); });
+    state.clients.forEach(function (c) { item(c.color, '업무/' + c.name); });
+    item('var(--ink)', '메모 있음');
   }
 
   function sortTasks(list) {
@@ -772,6 +774,28 @@
     Array.prototype.forEach.call($('status').children, function (b) { b.className = b.dataset.f === status ? 'on' : ''; });
   }
 
+  // ---------- 데일리 메모 ----------
+  var memoFor = null, memoTimer = null;
+  function renderMemo() {
+    $('memoTitle').textContent = '🗒 ' + md(sel) + ' 메모';
+    if (memoFor !== sel || document.activeElement !== $('memo')) {
+      memoFor = sel;
+      $('memo').value = state.memos[sel] || '';
+      $('memoSaved').textContent = '';
+    }
+  }
+  $('memo').oninput = function () {
+    var v = $('memo').value;
+    if (v.trim()) state.memos[memoFor] = v; else delete state.memos[memoFor];
+    // 캘린더를 다시 그리지 않고 표시만 바꿈 (다시 그리면 날짜 클릭이 씹힐 수 있음)
+    var num = document.querySelector('.day[data-key="' + memoFor + '"] .num');
+    if (num) num.classList.toggle('hasmemo', !!state.memos[memoFor]);
+    $('memoSaved').textContent = '저장 중…';
+    clearTimeout(memoTimer);
+    memoTimer = setTimeout(function () { save(); $('memoSaved').textContent = '저장됨'; }, 400);
+  };
+  $('memo').onblur = function () { clearTimeout(memoTimer); save(); };
+
   // ---------- 폼 ----------
   function syncFormClient() { $('fClientWrap').hidden = $('fCat').value !== 'work'; }
   function updateHint() {
@@ -864,33 +888,13 @@
     $('rTitle').textContent = '📊 ' + rY + '년 ' + (rM + 1) + '월 리포트';
     var s = monthStats(mk), p = monthStats(pk), rep = repeatStats(mk);
 
-    // 헤드라인: 반복하는 일이 빨라진 정도(건수 가중 평균)
-    var w = 0, acc = 0;
-    rep.forEach(function (r) { w += r.n; acc += r.change * r.n; });
-    var head = $('rHeadline');
-    if (w) {
-      var ch = acc / w;
-      head.innerHTML = '';
-      head.appendChild(document.createTextNode(ch >= 0 ? '같은 종류의 일을 예전보다 평균 ' + pct(ch) + ' 빨리 끝냈어요 🎉' : '같은 종류의 일에 예전보다 평균 ' + pct(-ch) + ' 더 걸렸어요'));
-      head.appendChild(el('small', '', '이번 달에 다시 한 일 ' + rep.length + '종류, ' + w + '건 기준'));
-    } else if (s.timed.length) {
-      head.textContent = '이번 달 ' + s.done + '개 완료, 기록된 작업 시간 ' + fmtMin(s.spent);
-      head.appendChild(el('small', '', '같은 이름의 일을 다음 달에도 기록하면 얼마나 빨라졌는지 보여드려요.'));
-    } else {
-      head.textContent = '아직 이 달의 시간 기록이 없어요';
-      head.appendChild(el('small', '', '할 일에서 ▶ 시작을 누르거나 실제 시간을 적으면 여기에 쌓여요.'));
-    }
-
     var k = $('rKpis'); k.innerHTML = '';
     var kpi = function (label, value, delta, note) {
       var b = el('div', 'kpi'); b.appendChild(el('div', 'l', label)); b.appendChild(el('div', 'v', value));
       var d = el('div', 'd'); d.innerHTML = delta || ''; if (note) d.appendChild(document.createTextNode((delta ? ' · ' : '') + note));
       b.appendChild(d); k.appendChild(b);
     };
-    var dCount = s.done - p.done;
-    kpi('완료한 일', s.done + '개', p.done || s.done ? '<span class="' + (dCount >= 0 ? 'up' : 'down') + '">지난달보다 ' + (dCount >= 0 ? '+' : '') + dCount + '개</span>' : '');
     kpi('기록된 작업 시간', fmtMin(s.spent), '', p.spent ? '지난달 ' + fmtMin(p.spent) : '');
-    kpi('예상 대비 실제', s.ratio === null ? '-' : pct(s.ratio), deltaPP(s.ratio, p.ratio, false), s.nEst ? '예상 넣은 ' + s.nEst + '개 기준' : '예상 시간을 넣으면 계산돼요');
     kpi('예상 시간 안에 끝냄', s.inTimeRate === null ? '-' : pct(s.inTimeRate), deltaPP(s.inTimeRate, p.inTimeRate, true));
     kpi('마감 지킨 비율', s.onTimeRate === null ? '-' : pct(s.onTimeRate), deltaPP(s.onTimeRate, p.onTimeRate, true), s.nDue ? s.nDue + '개 중' : '');
 
@@ -929,19 +933,7 @@
       bars.appendChild(row);
     });
 
-    var gt = $('rGroups'); gt.innerHTML = '';
     var estRows = rows.filter(function (r) { return r.nEst; }).sort(function (a, b) { return b.act / b.est - a.act / a.est; });
-    if (!estRows.length) gt.innerHTML = '<tr><td class="empty">예상 시간을 넣고 끝낸 일이 없어요</td></tr>';
-    else {
-      gt.innerHTML = '<tr><th>그룹</th><th>개수</th><th>예상 합계</th><th>실제 합계</th><th>실제/예상</th></tr>';
-      estRows.forEach(function (r) {
-        var tr = document.createElement('tr');
-        [r.name, r.nEst + '개', fmtMin(r.est), fmtMin(r.act), pct(r.act / r.est)].forEach(function (c, i) {
-          var td = el('td', '', c); if (i === 4) td.className = r.act > r.est ? 'down' : 'up'; tr.appendChild(td);
-        });
-        gt.appendChild(tr);
-      });
-    }
 
     var rt = $('rRepeat'); rt.innerHTML = '';
     if (!rep.length) rt.innerHTML = '<tr><td class="empty">이전 달에도 했던 일을 이번 달에 다시 하면 여기에 나와요</td></tr>';
@@ -1106,7 +1098,7 @@
   // ---------- 이벤트 ----------
   function renderAll() {
     fillFilter();
-    if (view === 'cal') { renderCal(); renderList(); } else renderReport();
+    if (view === 'cal') { renderCal(); renderList(); renderMemo(); } else renderReport();
     tick();
   }
   Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (b) {
