@@ -39,11 +39,9 @@
   .app{max-width:1600px; margin:0 auto; padding:16px 16px 32px; display:flex; flex-direction:column; gap:14px; min-height:100%}
 
   /* 헤더 */
-  .top{display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px}
+  .top{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px}
+  .topr{justify-self:end; display:flex; gap:6px}
   .brand{font-size:26px; white-space:nowrap}
-  .quote{flex:1 1 320px; min-width:0; background:var(--soft); border:1.5px solid var(--line); border-radius:14px; padding:6px 14px; cursor:pointer; text-align:center}
-  .quote .q{font-size:15px}
-  .quote .by{font-size:12px; color:var(--muted)}
   .tabs{display:flex; gap:6px}
   .tab, .iconbtn{width:46px; height:46px; border-radius:50%; border:1.5px solid var(--line); background:#fff; font-size:21px; line-height:1; padding:0; display:inline-flex; align-items:center; justify-content:center; flex:none}
   .tab.on{background:var(--ink); border-color:var(--ink); color:#fff}
@@ -118,11 +116,14 @@
   ul{list-style:none}
   .task{border-bottom:1px solid var(--line); padding:10px 2px; display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:4px 10px; align-items:start}
   .task input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent); margin-top:2px}
-  .task .t{font-size:16px; overflow-wrap:anywhere}
+  .task .t{font-size:16px; overflow-wrap:anywhere; cursor:text; border-radius:6px; padding:0 3px; margin-left:-3px}
+  .task .t:hover{background:var(--soft)}
+  .task .t:focus{outline:1.5px dashed var(--accent); background:var(--soft); text-decoration:none}
   .task.done .t{color:var(--muted); text-decoration:line-through}
   .task.running{background:var(--soft); border-radius:10px}
   .meta{display:flex; flex-wrap:wrap; gap:5px; align-items:center; margin-top:3px; font-size:12px; color:var(--muted)}
   select.pill{border:0; border-radius:999px; color:#fff; font-size:11px; font-weight:700; padding:1px 4px; cursor:pointer; max-width:9em}
+  select.pill.neutral{background:#efe9ec; color:var(--ink)}
   select.pill option{color:var(--ink); background:#fff}
   .p-high{background:var(--high)} .p-mid{background:var(--mid)} .p-low{background:var(--low)}
   .overdue{color:var(--high); font-weight:700}
@@ -162,6 +163,14 @@
   .tbl th{color:var(--muted); font-weight:700}
   .scroll{overflow-x:auto}
 
+  /* 목표 달성 */
+  .party{position:fixed; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; pointer-events:auto; transition:opacity .4s}
+  .party.out{opacity:0}
+  .party-cv{position:absolute; inset:0; width:100%; height:100%; pointer-events:none}
+  .party-msg{position:relative; background:#fff; border:2px solid var(--accent); border-radius:20px; padding:18px 28px; text-align:center; box-shadow:0 12px 40px rgba(255,92,157,.35); display:flex; flex-direction:column; gap:4px}
+  .party-msg b{font-size:30px; color:var(--accent-d)}
+  .party-msg span{font-size:15px; color:var(--ink)}
+
   /* 설정, 확인창, 토스트 */
   .modal{position:fixed; inset:0; background:rgba(74,31,53,.35); display:flex; align-items:center; justify-content:center; padding:16px; z-index:20}
   .modal[hidden]{display:none}
@@ -189,6 +198,10 @@
   }
   @media (max-width: 560px){
     .brand{font-size:22px}
+    .top{grid-template-columns:1fr}
+    .top > div[aria-hidden]{display:none}
+    .brand{justify-self:center}
+    .topr{justify-self:center}
     .day{min-height:56px}
     .chip{height:6px; padding:0; font-size:0}
   }
@@ -198,16 +211,15 @@
 <body>
 <div class="app">
   <header class="top">
+    <div aria-hidden="true"></div>
     <h1 class="brand">👧 클로이의 TO DO LIST</h1>
-    <button class="quote" type="button" id="quote" title="눌러서 다른 명언 보기">
-      <div class="q" id="qText"></div>
-      <div class="by" id="qBy"></div>
-    </button>
+    <div class="topr">
     <nav class="tabs" aria-label="화면">
       <button class="tab on" type="button" data-view="cal" aria-label="캘린더" title="캘린더">📅</button>
       <button class="tab" type="button" data-view="report" aria-label="월간 리포트" title="월간 리포트">📊</button>
     </nav>
     <button class="iconbtn" type="button" id="openSettings" aria-label="설정" title="설정">⚙️</button>
+    </div>
   </header>
 
   <div class="runbar" id="runbar" hidden>
@@ -533,6 +545,50 @@
       toast('✔ ' + t.text, msg);
     }
     save(); renderAll();
+    if (t.due) {
+      var dayList = state.todos.filter(function (x) { return x.due === t.due; });
+      if (dayList.length && dayList.every(function (x) { return x.done; })) celebrate(t.due, dayList.length);
+    }
+  }
+
+  // ---------- 목표 달성 축하 ----------
+  function celebrate(day, n) {
+    var old = document.querySelector('.party'); if (old) old.remove();
+    var wrap = el('div', 'party'); wrap.setAttribute('role', 'status');
+    var msg = el('div', 'party-msg');
+    msg.appendChild(el('b', '', '🎉 목표 달성!'));
+    msg.appendChild(el('span', '', (day === today() ? '오늘' : md(day)) + ' 계획한 ' + n + '개를 모두 끝냈어요'));
+    wrap.appendChild(msg);
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var cv = null;
+    if (!reduce) { cv = el('canvas', 'party-cv'); wrap.insertBefore(cv, msg); }
+    document.body.appendChild(wrap);
+    beep();
+    var end = function () { wrap.classList.add('out'); setTimeout(function () { wrap.remove(); }, 400); };
+    wrap.onclick = end;
+    if (!cv) { setTimeout(end, 2600); return; }
+    var W = cv.width = innerWidth, H = cv.height = innerHeight, g = cv.getContext('2d');
+    var colors = ['#ff5c9d', '#ff8fb8', '#b79cff', '#ffd166', '#34c4a0', '#7c5cff', '#ffffff'];
+    var ps = [];
+    [W * 0.2, W * 0.5, W * 0.8].forEach(function (x0, k) {
+      for (var i = 0; i < 70; i++) {
+        var a = -Math.PI / 2 + (Math.random() - 0.5) * 1.3, sp = 7 + Math.random() * 9;
+        ps.push({ x: x0, y: H * (k === 1 ? 0.55 : 0.7), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+          w: 5 + Math.random() * 6, h: 8 + Math.random() * 8, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.3,
+          c: colors[(Math.random() * colors.length) | 0] });
+      }
+    });
+    var t0 = performance.now();
+    (function frame(now) {
+      var el2 = now - t0;
+      g.clearRect(0, 0, W, H);
+      ps.forEach(function (p) {
+        p.vy += 0.22; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c;
+        g.globalAlpha = Math.max(0, 1 - el2 / 3200); g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore();
+      });
+      if (el2 < 3200 && wrap.isConnected) requestAnimationFrame(frame); else end();
+    })(t0);
   }
   function byId(id) { for (var i = 0; i < state.todos.length; i++) if (state.todos[i].id === id) return state.todos[i]; return null; }
 
@@ -600,7 +656,7 @@
       var max = 4;
       items.slice(0, max).forEach(function (t) {
         var g = groupOf(t);
-        var c = el('span', 'chip' + (t.done ? ' done' : ''), (t.dueTime ? t.dueTime + ' ' : '') + (t.cat === 'work' && clientById(t.client) ? '[' + g.name + '] ' : '') + t.text);
+        var c = el('span', 'chip' + (t.done ? ' done' : ''), (t.dueTime ? t.dueTime + ' ' : '') + t.text);
         c.style.background = g.color;
         c.title = t.text;
         cell.appendChild(c);
@@ -684,21 +740,34 @@
       cb.onchange = function () { if (cb.checked) completeTask(t); else { t.done = false; t.doneAt = ''; save(); renderAll(); } };
 
       var body = el('div');
-      body.appendChild(el('div', 't', t.text));
+      var tx = el('div', 't', t.text);
+      tx.contentEditable = 'true';
+      tx.spellcheck = false;
+      tx.setAttribute('role', 'textbox');
+      tx.setAttribute('aria-label', '할 일 이름 (눌러서 고치기)');
+      tx.onkeydown = function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); tx.blur(); }
+        if (e.key === 'Escape') { tx.textContent = t.text; tx.blur(); }
+      };
+      tx.onblur = function () {
+        var v = tx.textContent.replace(/\s+/g, ' ').trim();
+        if (!v) { tx.textContent = t.text; return; }
+        if (v !== t.text) { t.text = v; save(); renderCal(); tick(); }
+      };
+      body.appendChild(tx);
       var meta = el('div', 'meta');
       var pr = el('select', 'pill p-' + t.prio); pr.setAttribute('aria-label', '우선순위');
       Object.keys(PRIO).forEach(function (k) { var o = el('option', '', PRIO[k][0]); o.value = k; pr.appendChild(o); });
       pr.value = t.prio;
       pr.onchange = function () { t.prio = pr.value; save(); renderAll(); };
       meta.appendChild(pr);
-      var ct = el('select', 'pill'); ct.setAttribute('aria-label', '카테고리');
-      fillCatSelect(ct, t.cat); ct.style.background = catById(t.cat).color;
+      var ct = el('select', 'pill neutral'); ct.setAttribute('aria-label', '카테고리');
+      fillCatSelect(ct, t.cat);
       ct.onchange = function () { t.cat = ct.value; if (t.cat !== 'work') t.client = ''; save(); renderAll(); };
       meta.appendChild(ct);
       if (t.cat === 'work') {
-        var cl = el('select', 'pill'); cl.setAttribute('aria-label', '광고주');
+        var cl = el('select', 'pill neutral'); cl.setAttribute('aria-label', '광고주');
         fillClientSelect(cl, t.client);
-        var cc = clientById(t.client); cl.style.background = cc ? cc.color : '#94a3b8';
         cl.onchange = function () {
           if (cl.value === '__new') return newClientFrom(cl, function (id) { t.client = id; save(); renderAll(); });
           t.client = cl.value; save(); renderAll();
@@ -1024,54 +1093,6 @@
     save(); renderAll(); renderSettings();
   };
 
-  // ---------- 명언 ----------
-  var QUOTES = [
-    ["천재는 1%의 영감과 99%의 노력으로 이루어진다.", "토머스 에디슨"],
-    ["나는 실패한 것이 아니다. 효과가 없는 1만 가지 방법을 발견했을 뿐이다.", "토머스 에디슨"],
-    ["상상력은 지식보다 중요하다.", "알베르트 아인슈타인"],
-    ["인생은 자전거를 타는 것과 같다. 균형을 잡으려면 계속 움직여야 한다.", "알베르트 아인슈타인"],
-    ["중요한 것은 질문을 멈추지 않는 것이다.", "알베르트 아인슈타인"],
-    ["우리가 두려워해야 할 것은 두려움 그 자체뿐이다.", "프랭클린 D. 루스벨트"],
-    ["불가능해 보이는 일도 해내기 전까지는 늘 그렇게 보인다.", "넬슨 만델라"],
-    ["당신의 시간은 한정되어 있다. 다른 사람의 삶을 사느라 낭비하지 마라.", "스티브 잡스"],
-    ["항상 갈망하라. 우직하게 나아가라.", "스티브 잡스"],
-    ["죽음은 삶이 만든 최고의 발명품이다.", "스티브 잡스"],
-    ["내가 더 멀리 볼 수 있었던 것은 거인의 어깨 위에 서 있었기 때문이다.", "아이작 뉴턴"],
-    ["너 자신을 알라.", "소크라테스"],
-    ["검토되지 않은 삶은 살 가치가 없다.", "소크라테스"],
-    ["나는 생각한다, 고로 존재한다.", "르네 데카르트"],
-    ["일찍 자고 일찍 일어나는 사람은 건강하고 부유하고 현명해진다.", "벤저민 프랭클린"],
-    ["한 사람에게는 작은 한 걸음이지만, 인류에게는 거대한 도약이다.", "닐 암스트롱"],
-    ["나에게는 꿈이 있습니다.", "마틴 루서 킹"],
-    ["신에게는 아직 열두 척의 배가 남아 있사옵니다.", "이순신"],
-    ["죽고자 하면 살 것이고, 살고자 하면 죽을 것이다.", "이순신"],
-    ["하루라도 책을 읽지 않으면 입안에 가시가 돋는다.", "안중근"],
-    ["나는 우리나라가 세계에서 가장 아름다운 나라가 되기를 원한다.", "김구"],
-    ["죽는 날까지 하늘을 우러러 한 점 부끄럼이 없기를.", "윤동주"],
-    ["나는 살면서 실패하고, 또 실패했다. 그것이 내가 성공한 이유다.", "마이클 조던"],
-    ["성공을 축하하는 것도 좋지만, 실패에서 교훈을 얻는 것이 더 중요하다.", "빌 게이츠"],
-    ["배우고 때때로 익히면 또한 기쁘지 아니한가.", "공자"],
-    ["세 사람이 길을 가면 그중에 반드시 내 스승이 있다.", "공자"],
-    ["천 리 길도 한 걸음부터.", "노자"],
-    ["하늘이 장차 큰일을 맡기려 할 때는 반드시 먼저 그 마음을 괴롭게 한다.", "맹자"],
-    ["혼자서는 할 수 있는 일이 적지만, 함께라면 많은 일을 할 수 있다.", "헬렌 켈러"],
-    ["발밑만 보지 말고 별을 올려다보라.", "스티븐 호킹"],
-    ["배움을 멈추는 사람은 스무 살이든 여든 살이든 늙은 것이다.", "헨리 포드"],
-    ["인생은 가까이서 보면 비극이지만, 멀리서 보면 희극이다.", "찰리 채플린"],
-    ["나는 피와 노고와 눈물과 땀밖에 바칠 것이 없습니다.", "윈스턴 처칠"]
-  ];
-  function pickQuote(avoid) {
-    var n = Math.floor(Math.random() * QUOTES.length);
-    if (n === avoid) n = (n + 1) % QUOTES.length;
-    try { localStorage.setItem('todo-last-quote', String(n)); } catch (e) {}
-    return n;
-  }
-  var quoteIdx = pickQuote((function () { try { return parseInt(localStorage.getItem('todo-last-quote'), 10); } catch (e) { return -1; } })());
-  function renderQuote() {
-    $('qText').textContent = '“' + QUOTES[quoteIdx][0] + '”';
-    $('qBy').textContent = '오늘의 한마디 · ' + QUOTES[quoteIdx][1];
-  }
-  $('quote').onclick = function () { quoteIdx = pickQuote(quoteIdx); renderQuote(); };
 
   // ---------- 이벤트 ----------
   function renderAll() {
@@ -1102,7 +1123,6 @@
     if (lastDay !== today()) {
       lastDay = today(); sel = lastDay;
       var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth();
-      quoteIdx = pickQuote(quoteIdx); renderQuote();
     }
     renderAll(); checkDeadlines();
   });
@@ -1110,11 +1130,14 @@
   fillCatSelect($('fCat'), 'work');
   fillClientSelect($('fClient'), '');
   syncFormClient();
-  renderQuote();
   renderAll();
   checkDeadlines();
   setInterval(tick, 1000);
-  setInterval(function () { checkDeadlines(); if (view === 'cal' && state.active) renderList(); }, 30000);
+  setInterval(function () {
+    checkDeadlines();
+    var editing = document.activeElement && $('viewCal').contains(document.activeElement) && document.activeElement !== document.body;
+    if (view === 'cal' && state.active && !editing) renderList();
+  }, 30000);
 </script>
 </body>
 </html>
