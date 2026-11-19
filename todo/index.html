@@ -88,8 +88,12 @@
   .chip{display:block; font-size:12px; line-height:1.35; padding:1px 6px; border-radius:6px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .chip.done{opacity:.4; text-decoration:line-through}
   .more{font-size:11px; color:var(--muted); padding-left:4px}
-  .legend{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:10px; font-size:12px; color:var(--muted)}
-  .legend span{display:inline-flex; align-items:center; gap:4px}
+  .legend{display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; margin-top:10px; font-size:12px; color:var(--muted)}
+  .legend button{display:inline-flex; align-items:center; gap:4px; border:1.5px solid transparent; background:none; border-radius:999px; padding:2px 9px; font-size:12px; color:var(--muted)}
+  .legend button:hover{border-color:var(--line)}
+  .legend button.on{border-color:var(--accent); background:var(--soft); color:var(--ink); font-weight:700}
+  .legend.filtering button:not(.on):not(.clear){opacity:.45}
+  .legend .clear{color:var(--accent-d); text-decoration:underline}
   .dot{display:inline-block; width:9px; height:9px; border-radius:50%}
 
   /* 오른쪽 패널 */
@@ -568,6 +572,7 @@
 
   // ---------- 화면 상태 ----------
   var view = 'cal', status = 'all';
+  var catPick = '';                              // 범례에서 고른 카테고리/광고주 (비어 있으면 전체)
   var sel = today();
   var viewY = new Date().getFullYear(), viewM = new Date().getMonth();
   var rY = viewY, rM = viewM;
@@ -582,7 +587,7 @@
     var start = new Date(viewY, viewM, 1 - first.getDay());
     var weeks = Math.ceil((first.getDay() + new Date(viewY, viewM + 1, 0).getDate()) / 7);
     var byDay = {};
-    state.todos.forEach(function (t) { if (t.due) (byDay[t.due] = byDay[t.due] || []).push(t); });
+    state.todos.forEach(function (t) { if (t.due && picked(t)) (byDay[t.due] = byDay[t.due] || []).push(t); });
     for (var i = 0; i < weeks * 7; i++) {
       var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
       var key = ymd(d);
@@ -605,9 +610,30 @@
       grid.appendChild(cell);
     }
     var lg = $('legend'); lg.innerHTML = '';
-    var item = function (color, label) { var sp = el('span'); var dt = el('i', 'dot'); dt.style.background = color; sp.appendChild(dt); sp.appendChild(document.createTextNode(label)); lg.appendChild(sp); };
-    state.cats.forEach(function (c) { item(c.color, c.name); });
-    state.clients.forEach(function (c) { item(c.color, '업무/' + c.name); });
+    lg.className = 'legend' + (catPick ? ' filtering' : '');
+    var item = function (key, color, label) {
+      var b = el('button'); b.type = 'button';
+      b.className = catPick === key ? 'on' : '';
+      b.setAttribute('aria-pressed', catPick === key ? 'true' : 'false');
+      b.title = catPick === key ? '다시 누르면 전체 보기' : label + '만 보기';
+      var dt = el('i', 'dot'); dt.style.background = color;
+      b.appendChild(dt); b.appendChild(document.createTextNode(label));
+      b.onclick = function () { catPick = catPick === key ? '' : key; renderCal(); };
+      lg.appendChild(b);
+    };
+    state.cats.forEach(function (c) { item('k:' + c.id, c.color, c.name); });
+    state.clients.forEach(function (c) { item('c:' + c.id, c.color, '업무/' + c.name); });
+    if (catPick) {
+      var clr = el('button', 'clear', '전체 보기'); clr.type = 'button';
+      clr.onclick = function () { catPick = ''; renderCal(); };
+      lg.appendChild(clr);
+    }
+  }
+  // 업무를 고르면 광고주 상관없이 업무 전부, 광고주를 고르면 그 광고주만
+  function picked(t) {
+    if (!catPick) return true;
+    if (catPick.indexOf('k:') === 0) return t.cat === catPick.slice(2);
+    return t.cat === 'work' && t.client === catPick.slice(2);
   }
 
   function sortTasks(list) {
