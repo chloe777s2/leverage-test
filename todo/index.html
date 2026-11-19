@@ -32,7 +32,7 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{font-family:var(--font); background:var(--bg); color:var(--ink); line-height:1.5; word-break:keep-all}
-  button, input, select{font-family:inherit; color:inherit}
+  button, input, select, textarea{font-family:inherit; color:inherit}
   button{cursor:pointer}
   :focus-visible{outline:2px solid var(--accent-d); outline-offset:2px}
 
@@ -41,13 +41,12 @@
   /* 헤더 */
   .top{display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px}
   .brand{font-size:26px; white-space:nowrap}
-  .quote{flex:1 1 320px; min-width:0; background:var(--soft); border:1.5px solid var(--line); border-radius:14px; padding:6px 14px; cursor:pointer; text-align:left}
+  .quote{flex:1 1 320px; min-width:0; background:var(--soft); border:1.5px solid var(--line); border-radius:14px; padding:6px 14px; cursor:pointer; text-align:center}
   .quote .q{font-size:15px}
   .quote .by{font-size:12px; color:var(--muted)}
   .tabs{display:flex; gap:6px}
-  .tab{border:1.5px solid var(--line); background:#fff; color:var(--muted); border-radius:10px; padding:7px 16px; font-size:15px; font-weight:700}
+  .tab, .iconbtn{width:46px; height:46px; border-radius:50%; border:1.5px solid var(--line); background:#fff; font-size:21px; line-height:1; padding:0; display:inline-flex; align-items:center; justify-content:center; flex:none}
   .tab.on{background:var(--ink); border-color:var(--ink); color:#fff}
-  .iconbtn{border:1.5px solid var(--line); background:#fff; border-radius:10px; padding:6px 10px; font-size:15px}
   .iconbtn:hover, .tab:hover{border-color:var(--accent)}
 
   /* 실행 중 타이머 바 */
@@ -201,10 +200,10 @@
       <div class="by" id="qBy"></div>
     </button>
     <nav class="tabs" aria-label="화면">
-      <button class="tab on" type="button" data-view="cal">📅 캘린더</button>
-      <button class="tab" type="button" data-view="report">📊 월간 리포트</button>
+      <button class="tab on" type="button" data-view="cal" aria-label="캘린더" title="캘린더">📅</button>
+      <button class="tab" type="button" data-view="report" aria-label="월간 리포트" title="월간 리포트">📊</button>
     </nav>
-    <button class="iconbtn" type="button" id="openSettings" aria-label="설정">⚙️ 설정</button>
+    <button class="iconbtn" type="button" id="openSettings" aria-label="설정" title="설정">⚙️</button>
   </header>
 
   <div class="runbar" id="runbar" hidden>
@@ -222,7 +221,6 @@
     <div class="card">
       <div class="calhead">
         <h2 id="calTitle"></h2>
-        <select class="view" id="viewFilter" aria-label="캘린더에 보일 일"></select>
         <div class="nav">
           <button type="button" id="prev" aria-label="이전 달"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2L4 7l5 5"/></svg></button>
           <button type="button" id="todayBtn">오늘</button>
@@ -242,12 +240,7 @@
       <div class="card">
         <div class="dayhead">
           <h2 id="dayTitle"></h2>
-          <div class="seg" id="scope">
-            <button type="button" data-s="day" class="on">이 날</button>
-            <button type="button" data-s="all">전체</button>
-          </div>
         </div>
-        <p class="sub" id="daySum"></p>
         <div style="margin-top:10px; display:flex; flex-direction:column; gap:10px">
           <button class="addbtn" type="button" id="addToggle" aria-expanded="false">+ 할 일 추가</button>
           <form class="add" id="addForm" hidden>
@@ -268,7 +261,6 @@
           </div>
         </div>
         <ul id="list"></ul>
-        <button class="link" type="button" id="clearDone">완료한 항목 모두 삭제</button>
       </div>
     </aside>
   </section>
@@ -284,18 +276,16 @@
     </div>
     <div class="kpis" id="rKpis"></div>
     <div class="card">
-      <h2>💡 이번 달 인사이트</h2>
+      <h2>💡 인사이트</h2>
       <ul class="insights" id="rInsights" style="margin-top:10px"></ul>
     </div>
     <div class="two">
       <div class="card">
         <h2>⏱ 어디에 시간을 썼나</h2>
-        <p class="sub">이번 달 기록된 작업 시간 (업무는 광고주별)</p>
         <div class="bars" id="rBars" style="margin-top:12px"></div>
       </div>
       <div class="card">
         <h2>🔁 반복하는 일, 빨라졌나</h2>
-        <p class="sub">같은 이름의 일: 이번 달 평균 vs 그 전 평균</p>
         <div class="scroll" style="margin-top:12px"><table class="tbl" id="rRepeat"></table></div>
       </div>
     </div>
@@ -577,36 +567,12 @@
   }
 
   // ---------- 화면 상태 ----------
-  var view = 'cal', scope = 'day', status = 'all', calFilter = 'all';
+  var view = 'cal', status = 'all';
   var sel = today();
   var viewY = new Date().getFullYear(), viewM = new Date().getMonth();
   var rY = viewY, rM = viewM;
 
-  function passFilter(t) {
-    if (calFilter === 'all') return true;
-    if (calFilter === 'work') return t.cat === 'work';
-    if (calFilter.indexOf('c:') === 0) return t.cat === 'work' && t.client === calFilter.slice(2);
-    if (calFilter.indexOf('k:') === 0) return t.cat === calFilter.slice(2);
-    return true;
-  }
 
-  function fillFilter() {
-    var s = $('viewFilter'), cur = calFilter;
-    s.innerHTML = '';
-    var add = function (parent, v, label) { var o = el('option', '', label); o.value = v; parent.appendChild(o); };
-    add(s, 'all', '모든 일');
-    add(s, 'work', '업무 전체');
-    if (state.clients.length) {
-      var g = document.createElement('optgroup'); g.label = '광고주';
-      state.clients.forEach(function (c) { add(g, 'c:' + c.id, '업무/' + c.name); });
-      s.appendChild(g);
-    }
-    var g2 = document.createElement('optgroup'); g2.label = '카테고리';
-    state.cats.filter(function (c) { return c.id !== 'work'; }).forEach(function (c) { add(g2, 'k:' + c.id, c.name); });
-    s.appendChild(g2);
-    s.value = cur;
-    if (s.value !== cur) { calFilter = 'all'; s.value = 'all'; }
-  }
 
   function renderCal() {
     $('calTitle').textContent = '📅 ' + viewY + '년 ' + (viewM + 1) + '월';
@@ -616,7 +582,7 @@
     var start = new Date(viewY, viewM, 1 - first.getDay());
     var weeks = Math.ceil((first.getDay() + new Date(viewY, viewM + 1, 0).getDate()) / 7);
     var byDay = {};
-    state.todos.forEach(function (t) { if (t.due && passFilter(t)) (byDay[t.due] = byDay[t.due] || []).push(t); });
+    state.todos.forEach(function (t) { if (t.due) (byDay[t.due] = byDay[t.due] || []).push(t); });
     for (var i = 0; i < weeks * 7; i++) {
       var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
       var key = ymd(d);
@@ -635,14 +601,13 @@
         cell.appendChild(c);
       });
       if (items.length > max) cell.appendChild(el('span', 'more', '+' + (items.length - max) + '개'));
-      cell.onclick = function () { sel = this.dataset.key; scope = 'day'; var p = sel.split('-'); if (+p[1] - 1 !== viewM) { viewY = +p[0]; viewM = +p[1] - 1; } renderAll(); };
+      cell.onclick = function () { sel = this.dataset.key; var p = sel.split('-'); if (+p[1] - 1 !== viewM) { viewY = +p[0]; viewM = +p[1] - 1; } renderAll(); };
       grid.appendChild(cell);
     }
     var lg = $('legend'); lg.innerHTML = '';
     var item = function (color, label) { var sp = el('span'); var dt = el('i', 'dot'); dt.style.background = color; sp.appendChild(dt); sp.appendChild(document.createTextNode(label)); lg.appendChild(sp); };
     state.cats.forEach(function (c) { item(c.color, c.name); });
     state.clients.forEach(function (c) { item(c.color, '업무/' + c.name); });
-    item('var(--ink)', '메모 있음');
   }
 
   function sortTasks(list) {
@@ -679,24 +644,12 @@
   }
 
   function renderList() {
-    $('dayTitle').textContent = scope === 'day' ? md(sel) + ' (' + DOW[new Date(sel + 'T00:00').getDay()] + ')' : '전체 할 일';
-    var base = state.todos.filter(passFilter);
-    var dayTasks = base.filter(function (t) { return t.due === sel; });
-    var spentThatDay = 0;
-    state.todos.forEach(function (t) { (t.log || []).forEach(function (l) { if (l.date === sel) spentThatDay += l.min; }); });
-    if (state.active && sel === today()) spentThatDay += (Date.now() - state.active.start) / 60000;
-    if (scope === 'day') {
-      var left = dayTasks.filter(function (t) { return !t.done; }).length;
-      $('daySum').textContent = (dayTasks.length ? '남은 할 일 ' + left + '개 / ' + dayTasks.length + '개' : '마감인 할 일이 없어요') + (spentThatDay >= 1 ? ' · 이 날 작업 ' + fmtMin(spentThatDay) : '');
-    } else {
-      $('daySum').textContent = '남은 할 일 ' + base.filter(function (t) { return !t.done; }).length + '개 / ' + base.length + '개';
-    }
-
-    var shown = sortTasks(scope === 'day' ? dayTasks : base).filter(function (t) {
+    $('dayTitle').textContent = md(sel) + ' (' + DOW[new Date(sel + 'T00:00').getDay()] + ')';
+    var shown = sortTasks(state.todos.filter(function (t) { return t.due === sel; })).filter(function (t) {
       return status === 'all' || (status === 'done') === !!t.done;
     });
     var ul = $('list'); ul.innerHTML = '';
-    if (!shown.length) ul.appendChild(el('div', 'empty', scope === 'day' ? '이 날 할 일이 없어요. 위에서 추가해 보세요.' : '할 일이 없어요'));
+    if (!shown.length) ul.appendChild(el('div', 'empty', '이 날 할 일이 없어요. 위에서 추가해 보세요.'));
     shown.forEach(function (t) {
       var running = state.active && state.active.id === t.id;
       var li = el('li', 'task' + (t.done ? ' done' : '') + (running ? ' running' : ''));
@@ -728,7 +681,7 @@
       }
       if (t.due) {
         var late = !t.done && dueAt(t) < Date.now();
-        meta.appendChild(el('span', late ? 'overdue' : '', (scope === 'all' ? md(t.due) + ' ' : '') + (t.dueTime || '') + (late ? ' 마감 지남' : t.dueTime ? ' 마감' : '')));
+        meta.appendChild(el('span', late ? 'overdue' : '', (t.dueTime || '') + (late ? ' 마감 지남' : t.dueTime ? ' 마감' : '')));
       }
       body.appendChild(meta);
 
@@ -770,7 +723,6 @@
       li.appendChild(cb); li.appendChild(body); li.appendChild(del); li.appendChild(tr);
       ul.appendChild(li);
     });
-    Array.prototype.forEach.call($('scope').children, function (b) { b.className = b.dataset.s === scope ? 'on' : ''; });
     Array.prototype.forEach.call($('status').children, function (b) { b.className = b.dataset.f === status ? 'on' : ''; });
   }
 
@@ -1097,7 +1049,6 @@
 
   // ---------- 이벤트 ----------
   function renderAll() {
-    fillFilter();
     if (view === 'cal') { renderCal(); renderList(); renderMemo(); } else renderReport();
     tick();
   }
@@ -1109,15 +1060,12 @@
       renderAll();
     };
   });
-  $('viewFilter').onchange = function () { calFilter = $('viewFilter').value; renderAll(); };
   $('prev').onclick = function () { viewM--; if (viewM < 0) { viewM = 11; viewY--; } renderCal(); };
   $('next').onclick = function () { viewM++; if (viewM > 11) { viewM = 0; viewY++; } renderCal(); };
-  $('todayBtn').onclick = function () { var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth(); sel = today(); scope = 'day'; renderAll(); };
+  $('todayBtn').onclick = function () { var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth(); sel = today(); renderAll(); };
   $('rPrev').onclick = function () { rM--; if (rM < 0) { rM = 11; rY--; } renderReport(); };
   $('rNext').onclick = function () { rM++; if (rM > 11) { rM = 0; rY++; } renderReport(); };
-  $('scope').onclick = function (e) { if (e.target.dataset.s) { scope = e.target.dataset.s; renderList(); } };
   $('status').onclick = function (e) { if (e.target.dataset.f) { status = e.target.dataset.f; renderList(); } };
-  $('clearDone').onclick = function () { state.todos = state.todos.filter(function (t) { return !t.done; }); save(); renderAll(); };
   $('runStop').onclick = function () { stopTimer(); renderAll(); };
   $('runDone').onclick = function () { var t = state.active && byId(state.active.id); if (t) completeTask(t); };
 
@@ -1126,7 +1074,7 @@
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) return;
     if (lastDay !== today()) {
-      lastDay = today(); sel = lastDay; scope = 'day';
+      lastDay = today(); sel = lastDay;
       var d = new Date(); viewY = d.getFullYear(); viewM = d.getMonth();
       quoteIdx = pickQuote(quoteIdx); renderQuote();
     }
